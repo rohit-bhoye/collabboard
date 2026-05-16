@@ -1,0 +1,11 @@
+.toolbar-container{
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+}
+
+.rectangle{
+    cursor: pointer;
+    padding: .5rem;
+    font-size: 1rem;
+}
