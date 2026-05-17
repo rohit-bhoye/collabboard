@@ -68,12 +68,22 @@ const Canvas = ({
   //===============*inside shape*================
 
   const getIsInside = (element, x, y) => {
+    const ctx = ctxRef.current;
+    let width;
+    let height;
+    if (element.type === "rect") {
+      width = element.width;
+      height = element.height;
+    } else if (element.type === "text") {
+      width = ctx.measureText(element.text).width;
+      height = element.fontSize;
+    }
     const isInside =
       x >= element.x &&
-      x <= element.x + element.width &&
+      x <= element.x + width &&
       y >= element.y &&
-      y <= element.y + element.height;
-    return isInside || null;
+      y <= element.y + height;
+    return isInside;
   };
 
   //fillRect  helper function
@@ -163,6 +173,10 @@ const Canvas = ({
           ctx.strokeStyle = "black";
           strokeRect(ctx, element.x, element.y, element.width, element.height);
         }
+      } else if (element.type === "text") {
+        ctx.font = `${element.fontSize}px sans-serif`;
+        ctx.fillStyle = "black";
+        ctx.fillText(element.text, element.x, element.y);
       }
     });
   };
@@ -333,6 +347,7 @@ const Canvas = ({
         selectedElement = true;
         offsetXRef.current = x - element.x;
         offsetYRef.current = y - element.y;
+        console.log("Inside");
         break;
       }
     }

@@ -9,6 +9,26 @@ const App = () => {
 
   const idRef = useRef(1);
 
+  const addText = () => {
+    const data = {
+      id: idRef.current,
+      type: "text",
+      x: Math.round(window.innerWidth / 2 - 100),
+      y: Math.round(window.innerHeight / 2 - 60),
+      text: "Hello",
+      fontSize: 20,
+    };
+
+    const newCanvasData = [
+      ...canvasData.slice(0, currentIndex + 1),
+      [...canvasData[currentIndex], data],
+    ];
+    setCanvasData(newCanvasData);
+    setCurrentIndex(newCanvasData.length - 1);
+    setCurrentCanvas(newCanvasData[newCanvasData.length - 1]);
+    idRef.current = idRef.current + 1;
+  };
+
   const addRectangle = () => {
     const data = {
       id: idRef.current,
@@ -25,12 +45,12 @@ const App = () => {
     ];
     setCanvasData(newCanvasData);
     setCurrentIndex(newCanvasData.length - 1);
-    setCurrentCanvas(newCanvasData[newCanvasData.length -1]);
+    setCurrentCanvas(newCanvasData[newCanvasData.length - 1]);
     idRef.current = idRef.current + 1;
   };
   return (
     <div className="main-container">
-      <ToolBar addRectangle={addRectangle} />
+      <ToolBar addRectangle={addRectangle} addText={addText} />
       <Canvas
         canvasData={canvasData}
         setCanvasData={setCanvasData}
