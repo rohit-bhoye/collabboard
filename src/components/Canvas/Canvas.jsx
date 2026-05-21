@@ -135,7 +135,7 @@ const Canvas = ({
     strokeRect(x + width - 10 / 2, y + height - 10 / 2, 10, 10);
   };
 
-  //resizeLogic function
+  //******************************Resize Logic function******************************
 
   const resizeLogic = (element, oldRight, oldBottom, oldLeft, oldTop, x, y) => {
     if (element.type === "rect") {
@@ -227,12 +227,13 @@ const Canvas = ({
         return element;
       }
     } else if (element.type === "text") {
-      
       if (activehandleRef.current === "isTopLeft") {
-       
-        let updatedX = x;
-        let updatedY = y;
-        let updatedFontSize = element.fontSize + updatedY;
+        let deltaX = x - offsetXRef.current;
+        let deltaY = y - offsetYRef.current;
+        let updatedX = selectedElementRef.current.x + deltaX;
+        let updatedY = selectedElementRef.current.y + deltaY;
+        let updatedFontSize = selectedElementRef.current.fontSize - deltaY* 0.3;
+        updatedFontSize = Math.max(20, updatedFontSize);
         // if (updatedFontSize < 0) {
         //   updatedFontSize = Math.abs(updatedFontSize);
         //   updatedX -= width;
@@ -246,10 +247,9 @@ const Canvas = ({
           ...element,
           x: updatedX,
           y: updatedY,
-          fontSize:updatedFontSize
+          fontSize: updatedFontSize,
         };
       } else if (activehandleRef.current === "isBottomRight") {
-        
         let updatedX = selectedElementRef.current.x;
         let updatedY = selectedElementRef.current.y;
         let updatedFontSize = element.fontSize + updatedY;
@@ -268,7 +268,7 @@ const Canvas = ({
           y: updatedY,
           width: width,
           height: height,
-           fontSize:updatedFontSize
+          fontSize: updatedFontSize,
         };
       } else if (activehandleRef.current === "isTopRight") {
         let width = x - oldLeft;
@@ -326,6 +326,7 @@ const Canvas = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     currentCanvas.forEach((element) => {
+      console.log(element.x, element.y, "bye");
       if (element.type === "rect") {
         ctx.fillStyle = "white";
         fillRect(element.x, element.y, element.width, element.height);
@@ -496,6 +497,7 @@ const Canvas = ({
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    console.log(x, y, "hell");
     //resize activation
     if (activehandleRef.current) {
       isResizingRef.current = true;
@@ -536,6 +538,9 @@ const Canvas = ({
             left: element.x,
             top: element.y,
           };
+          offsetXRef.current = x - element.x;
+          offsetYRef.current = y - element.y;
+          
           selectedElement = true;
         }
         break;
