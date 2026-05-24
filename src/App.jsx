@@ -16,6 +16,8 @@ const App = () => {
       x: Math.round(window.innerWidth / 2 - 100),
       y: Math.round(window.innerHeight / 2 - 60),
       text: "Hello",
+      width:20,
+      height:20,
       fontSize: 20,
     };
 

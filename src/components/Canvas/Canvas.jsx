@@ -135,152 +135,203 @@ const Canvas = ({
     strokeRect(x + width - 10 / 2, y + height - 10 / 2, 10, 10);
   };
 
-  //******************************Resize Logic function******************************
+  //******************************Resize Rectangle******************************\\
 
-  const resizeLogic = (element, oldRight, oldBottom, oldLeft, oldTop, x, y) => {
-    if (element.type === "rect") {
-      if (activehandleRef.current === "isTopLeft") {
-        let width = oldRight - x;
-        let height = oldBottom - y;
-        let updatedX = x;
-        let updatedY = y;
-        if (width < 0) {
-          width = Math.abs(width);
-          updatedX -= width;
-        }
-
-        if (height < 0) {
-          height = Math.abs(height);
-          updatedY -= height;
-        }
-        return {
-          ...element,
-          x: updatedX,
-          y: updatedY,
-          width: width,
-          height: height,
-        };
-      } else if (activehandleRef.current === "isBottomRight") {
-        let width = x - oldLeft;
-        let height = y - oldTop;
-        let updatedX = selectedElementRef.current.x;
-        let updatedY = selectedElementRef.current.y;
-        if (width < 0) {
-          width = Math.abs(width);
-          updatedX -= width;
-        }
-
-        if (height < 0) {
-          height = Math.abs(height);
-          updatedY -= height;
-        }
-        return {
-          ...element,
-          x: updatedX,
-          y: updatedY,
-          width: width,
-          height: height,
-        };
-      } else if (activehandleRef.current === "isTopRight") {
-        let width = x - oldLeft;
-        let height = oldBottom - y;
-        let updatedX = selectedElementRef.current.x;
-        let updatedY = y;
-        if (width < 0) {
-          width = Math.abs(width);
-          updatedX -= width;
-        }
-
-        if (height < 0) {
-          height = Math.abs(height);
-          updatedY -= height;
-        }
-        return {
-          ...element,
-          x: updatedX,
-          y: updatedY,
-          width: width,
-          height: height,
-        };
-      } else if (activehandleRef.current === "isBottomLeft") {
-        let width = oldRight - x;
-        let height = y - oldTop;
-        let updatedX = x;
-        let updatedY = selectedElementRef.current.y;
-        if (width < 0) {
-          width = Math.abs(width);
-          updatedX -= width;
-        }
-
-        if (height < 0) {
-          height = Math.abs(height);
-          updatedY -= height;
-        }
-        return {
-          ...element,
-          x: updatedX,
-          y: updatedY,
-          width: width,
-          height: height,
-        };
-      } else {
-        return element;
+  const resizeRectangle = (
+    element,
+    oldRight,
+    oldBottom,
+    oldLeft,
+    oldTop,
+    x,
+    y,
+  ) => {
+    if (activehandleRef.current === "isTopLeft") {
+      let width = oldRight - x;
+      let height = oldBottom - y;
+      let updatedX = x;
+      let updatedY = y;
+      if (width < 0) {
+        width = Math.abs(width);
+        updatedX -= width;
       }
-    } else if (element.type === "text") {
-     
-      if (activehandleRef.current === "isTopLeft") {
-        let width = oldRight - x;
-        let height = oldBottom - y;
-        let updatedX = x;
-        let updatedY = y;
-        let updatedSize = Math.max(20, height);
 
-        return {
-          ...element,
-          
-          y: updatedY,
-          fontSize: updatedSize,
-        };
-      } else if (activehandleRef.current === "isBottomRight") {
-        let width = x - oldLeft;
-        let height = y - oldTop;
-        let updatedX = selectedElementRef.current.x;
-        let updatedY = selectedElementRef.current.y;
-        let updatedSize = Math.max(20, height);
-        return {
-          ...element,
-          x: updatedX,
-          y: updatedY,
-          fontSize: updatedSize,
-        };
-      } else if (activehandleRef.current === "isTopRight") {
-        let width = x - oldLeft;
-        let height = oldBottom - y;
-        let updatedX = selectedElementRef.current.x;
-        let updatedY = y;
-        let updatedSize = Math.max(20, height);
-        return {
-          ...element,
-          x: updatedX,
-          y: updatedY,
-          fontSize: updatedSize,
-        };
-      } else if (activehandleRef.current === "isBottomLeft") {
-        let width = oldRight - x;
-        let height = y - oldTop;
-        let updatedX = x;
-        let updatedY = selectedElementRef.current.y;
-        let updatedSize = Math.max(20, height);
-        return {
-          ...element,
-          y: updatedY,
-          fontSize: updatedSize,
-        };
-      } else {
-        return element;
+      if (height < 0) {
+        height = Math.abs(height);
+        updatedY -= height;
       }
+      return {
+        ...element,
+        x: updatedX,
+        y: updatedY,
+        width: width,
+        height: height,
+      };
+    } else if (activehandleRef.current === "isBottomRight") {
+      let width = x - oldLeft;
+      let height = y - oldTop;
+      let updatedX = selectedElementRef.current.x;
+      let updatedY = selectedElementRef.current.y;
+      if (width < 0) {
+        width = Math.abs(width);
+        updatedX -= width;
+      }
+
+      if (height < 0) {
+        height = Math.abs(height);
+        updatedY -= height;
+      }
+      return {
+        ...element,
+        x: updatedX,
+        y: updatedY,
+        width: width,
+        height: height,
+      };
+    } else if (activehandleRef.current === "isTopRight") {
+      let width = x - oldLeft;
+      let height = oldBottom - y;
+      let updatedX = selectedElementRef.current.x;
+      let updatedY = y;
+      if (width < 0) {
+        width = Math.abs(width);
+        updatedX -= width;
+      }
+
+      if (height < 0) {
+        height = Math.abs(height);
+        updatedY -= height;
+      }
+      return {
+        ...element,
+        x: updatedX,
+        y: updatedY,
+        width: width,
+        height: height,
+      };
+    } else if (activehandleRef.current === "isBottomLeft") {
+      let width = oldRight - x;
+      let height = y - oldTop;
+      let updatedX = x;
+      let updatedY = selectedElementRef.current.y;
+      if (width < 0) {
+        width = Math.abs(width);
+        updatedX -= width;
+      }
+
+      if (height < 0) {
+        height = Math.abs(height);
+        updatedY -= height;
+      }
+      return {
+        ...element,
+        x: updatedX,
+        y: updatedY,
+        width: width,
+        height: height,
+      };
+    } else {
+      return element;
     }
   };
+
+  //******************************Resize Text******************************\\
+
+  const resizeText = (element, oldRight, oldBottom, oldLeft, oldTop, x, y) => {
+    if (activehandleRef.current === "isTopLeft") {
+      let width = oldRight - x;
+      let height = oldBottom - y;
+
+      width = Math.max(20, width);
+      height = Math.max(20, height);
+
+      // scale based resize
+      const scaleX = width / selectedElementRef.current.width;
+
+      const scaleY = height / selectedElementRef.current.height;
+
+      const scale = Math.min(scaleX, scaleY);
+
+      let updatedSize = selectedElementRef.current.fontSize * scale;
+
+      updatedSize = Math.max(20, updatedSize);
+
+      // compensate origin
+      const sizeDiff = updatedSize - selectedElementRef.current.fontSize;
+
+      let updatedX = selectedElementRef.current.x - sizeDiff;
+
+      let updatedY = selectedElementRef.current.y - sizeDiff;
+
+      return {
+        ...element,
+
+        x: updatedX,
+        y: updatedY,
+
+        width,
+        height,
+
+        fontSize: updatedSize,
+      };
+    } else if (activehandleRef.current === "isBottomRight") {
+      let width = x - oldLeft;
+      let height = y - oldTop;
+      let updatedX = selectedElementRef.current.x;
+      let updatedY = selectedElementRef.current.y;
+      let updatedSize = Math.max(20, height);
+      return {
+        ...element,
+        x: updatedX,
+        y: updatedY,
+        fontSize: updatedSize,
+      };
+    } else if (activehandleRef.current === "isTopRight") {
+      let width = x - oldLeft;
+      let height = oldBottom - y;
+      let updatedX = selectedElementRef.current.x;
+      let updatedY = y;
+      let updatedSize = Math.max(20, height);
+      return {
+        ...element,
+        x: updatedX,
+        y: updatedY,
+        fontSize: updatedSize,
+      };
+    } else if (activehandleRef.current === "isBottomLeft") {
+      let width = oldRight - x;
+      let height = y - oldTop;
+
+      width = Math.max(20, width);
+      height = Math.max(20, height);
+
+      const scaleX = width / selectedElementRef.current.width;
+
+      const scaleY = height / selectedElementRef.current.height;
+
+      const scale = Math.min(scaleX, scaleY);
+
+      let updatedSize = selectedElementRef.current.fontSize * scale;
+
+      updatedSize = Math.max(20, updatedSize);
+
+      const sizeDiff = updatedSize - selectedElementRef.current.fontSize;
+
+      return {
+        ...element,
+
+        x: selectedElementRef.current.x - sizeDiff,
+
+        width,
+        height,
+
+        fontSize: updatedSize,
+      };
+    } else {
+      return element;
+    }
+  };
+
   //===============================Draw Shapes===============================\\
 
   const draw = () => {
@@ -492,6 +543,7 @@ const Canvas = ({
             width = element.width;
             height = element.height;
           } else if (element.type === "text") {
+            ctx.font = `${element.fontSize}px sans-serif`;
             width = ctx.measureText(element.text).width;
             height = element.fontSize;
           }
@@ -502,6 +554,8 @@ const Canvas = ({
             bottom: element.y + height,
             left: element.x,
             top: element.y,
+            width: width,
+            height: height,
           };
           offsetXRef.current = x;
           offsetYRef.current = y;
@@ -547,15 +601,27 @@ const Canvas = ({
       setCurrentCanvas((prev) =>
         prev.map((element) => {
           if (element.id === selectedElementIdRef.current) {
-            return resizeLogic(
-              element,
-              oldRight,
-              oldBottom,
-              oldLeft,
-              oldTop,
-              x,
-              y,
-            );
+            if (element.type === "rect") {
+              return resizeRectangle(
+                element,
+                oldRight,
+                oldBottom,
+                oldLeft,
+                oldTop,
+                x,
+                y,
+              );
+            } else if (element.type === "text") {
+              return resizeText(
+                element,
+                oldRight,
+                oldBottom,
+                oldLeft,
+                oldTop,
+                x,
+                y,
+              );
+            }
           } else {
             return element;
           }
