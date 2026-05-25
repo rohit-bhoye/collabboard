@@ -238,6 +238,7 @@ const Canvas = ({
   //******************************Resize Text******************************\\
 
   const resizeText = (element, oldRight, oldBottom, oldLeft, oldTop, x, y) => {
+    const ctx = ctxRef.current;
     if (activehandleRef.current === "isTopLeft") {
       let width = oldRight - x;
       let height = oldBottom - y;
@@ -245,57 +246,76 @@ const Canvas = ({
       width = Math.max(20, width);
       height = Math.max(20, height);
 
-      // scale based resize
       const scaleX = width / selectedElementRef.current.width;
 
       const scaleY = height / selectedElementRef.current.height;
 
-      const scale = Math.min(scaleX, scaleY);
+      const scale = Math.max(scaleX, scaleY);
 
       let updatedSize = selectedElementRef.current.fontSize * scale;
 
       updatedSize = Math.max(20, updatedSize);
+      ctx.font = `${updatedSize}px sans-serif`;
 
-      // compensate origin
-      const sizeDiff = updatedSize - selectedElementRef.current.fontSize;
-
-      let updatedX = selectedElementRef.current.x - sizeDiff;
-
-      let updatedY = selectedElementRef.current.y - sizeDiff;
+      const measuredWidth = ctx.measureText(element.text).width;
+      let updatedX = oldRight - measuredWidth;
+      let updatedY = oldBottom - updatedSize;
 
       return {
         ...element,
 
         x: updatedX,
         y: updatedY,
-
-        width,
-        height,
-
+        width: width,
+        height: height,
         fontSize: updatedSize,
       };
     } else if (activehandleRef.current === "isBottomRight") {
       let width = x - oldLeft;
       let height = y - oldTop;
-      let updatedX = selectedElementRef.current.x;
-      let updatedY = selectedElementRef.current.y;
-      let updatedSize = Math.max(20, height);
+
+      width = Math.max(20, width);
+      height = Math.max(20, height);
+
+      const scaleX = width / selectedElementRef.current.width;
+
+      const scaleY = height / selectedElementRef.current.height;
+
+      const scale = Math.max(scaleX, scaleY);
+
+      let updatedSize = selectedElementRef.current.fontSize * scale;
+
+      updatedSize = Math.max(20, updatedSize);
+
       return {
         ...element,
-        x: updatedX,
-        y: updatedY,
+        width: width,
+        height: height,
         fontSize: updatedSize,
       };
     } else if (activehandleRef.current === "isTopRight") {
       let width = x - oldLeft;
       let height = oldBottom - y;
-      let updatedX = selectedElementRef.current.x;
-      let updatedY = y;
-      let updatedSize = Math.max(20, height);
+      width = Math.max(20, width);
+      height = Math.max(20, height);
+
+      const scaleX = width / selectedElementRef.current.width;
+
+      const scaleY = height / selectedElementRef.current.height;
+
+      const scale = Math.max(scaleX, scaleY);
+
+      let updatedSize = selectedElementRef.current.fontSize * scale;
+
+      updatedSize = Math.max(20, updatedSize);
+
+      let updatedY = oldBottom - updatedSize;
+
       return {
         ...element,
-        x: updatedX,
         y: updatedY,
+        width: width,
+        height: height,
         fontSize: updatedSize,
       };
     } else if (activehandleRef.current === "isBottomLeft") {
@@ -309,22 +329,22 @@ const Canvas = ({
 
       const scaleY = height / selectedElementRef.current.height;
 
-      const scale = Math.min(scaleX, scaleY);
+      const scale = Math.max(scaleX, scaleY);
 
       let updatedSize = selectedElementRef.current.fontSize * scale;
 
       updatedSize = Math.max(20, updatedSize);
+      ctx.font = `${updatedSize}px sans-serif`;
+      const measuredWidth = ctx.measureText(element.text).width;
 
-      const sizeDiff = updatedSize - selectedElementRef.current.fontSize;
+      let updatedX = oldRight - measuredWidth;
 
       return {
         ...element,
 
-        x: selectedElementRef.current.x - sizeDiff,
-
-        width,
-        height,
-
+        x: updatedX,
+        width: width,
+        height: height,
         fontSize: updatedSize,
       };
     } else {
@@ -364,12 +384,15 @@ const Canvas = ({
         ctx.textBaseline = "top";
 
         ctx.fillText(element.text, element.x, element.y);
+        const textWidth = ctx.measureText(element.text).width;
+        const textHeight = element.fontSize;
+        const padding = 2;
         if (element.id === selectedElementIdRef.current) {
           hitDetectionBorder(
-            element.x - 2,
-            element.y - 2,
-            ctx.measureText(element.text).width + 4,
-            element.fontSize + 4,
+            element.x - padding,
+            element.y - padding,
+            textWidth + padding * 2,
+            textHeight + padding * 2,
           );
         }
       }
