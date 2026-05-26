@@ -2,10 +2,12 @@ import React, { useRef, useState } from "react";
 import "./App.css";
 import Canvas from "./components/Canvas/Canvas";
 import ToolBar from "./components/ToolBar/ToolBar";
+import RoomPanel from "./components/RoomPanel/RoomPanel";
 const App = () => {
   const [canvasData, setCanvasData] = useState([[]]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentCanvas, setCurrentCanvas] = useState(canvasData[currentIndex]);
+  const [roomId, setRoomId] = useState("");
 
   const idRef = useRef(1);
 
@@ -16,8 +18,8 @@ const App = () => {
       x: Math.round(window.innerWidth / 2 - 100),
       y: Math.round(window.innerHeight / 2 - 60),
       text: "Hello",
-      width:40,
-      height:40,
+      width: 40,
+      height: 40,
       fontSize: 40,
     };
 
@@ -52,7 +54,9 @@ const App = () => {
   };
   return (
     <div className="main-container">
+      <RoomPanel roomId={roomId} setRoomId={setRoomId} />
       <ToolBar addRectangle={addRectangle} addText={addText} />
+      
       <Canvas
         canvasData={canvasData}
         setCanvasData={setCanvasData}
