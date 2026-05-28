@@ -1,9 +1,11 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./Room.css";
 import Canvas from "../../components/Canvas/Canvas";
 import { useParams } from "react-router-dom";
 import RoomPanel from "../../components/RoomPanel/RoomPanel";
 import ToolBar from "../../components/ToolBar/ToolBar";
+import { database } from "../../firebase";
+import { set, ref } from "firebase/database";
 const Room = () => {
   const [canvasData, setCanvasData] = useState([[]]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -11,6 +13,12 @@ const Room = () => {
   const { roomId } = useParams();
 
   const idRef = useRef(1);
+
+  useEffect(() => {
+    set(ref(database, `rooms/${roomId}`), {
+      createdAt: Date.now(),
+    });
+  }, []);
 
   const addText = () => {
     const data = {
@@ -55,6 +63,7 @@ const Room = () => {
   };
   return (
     <div>
+      <h1 className="roomId-title">Room:{roomId}</h1>
       <RoomPanel />
       <ToolBar addRectangle={addRectangle} addText={addText} />
       <Canvas

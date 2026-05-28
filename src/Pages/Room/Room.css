@@ -1,0 +1,6 @@
+.roomId-title{
+    position: fixed;
+    top: 1;
+    left:50%;
+    transform: translateX(-50%);
+}
