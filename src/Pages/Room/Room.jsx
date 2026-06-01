@@ -6,19 +6,34 @@ import RoomPanel from "../../components/RoomPanel/RoomPanel";
 import ToolBar from "../../components/ToolBar/ToolBar";
 import { database } from "../../firebase";
 import { set, ref } from "firebase/database";
+import { onValue } from "firebase/database";
 const Room = () => {
   const [canvasData, setCanvasData] = useState([[]]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentCanvas, setCurrentCanvas] = useState(canvasData[currentIndex]);
+  const [loading, setLoading] = useState(true);
   const { roomId } = useParams();
 
   const idRef = useRef(1);
 
+  //====================firebase data read/write===============\\
   useEffect(() => {
-    set(ref(database, `rooms/${roomId}`), {
-      createdAt: Date.now(),
+    set(ref(database, `rooms/${roomId}/createdAt`), Date.now());
+  }, []);
+
+  useEffect(() => {
+    const roomRef = ref(database, `rooms/${roomId}/canvasData`);
+    onValue(roomRef, (snapshot) => {
+      const data = snapshot.val();
+      setCurrentCanvas(data || []);
+      setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    set(ref(database, `rooms/${roomId}/canvasData`), currentCanvas);
+  }, [currentCanvas,loading]);
 
   const addText = () => {
     const data = {
