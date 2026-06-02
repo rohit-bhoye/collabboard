@@ -680,6 +680,7 @@ const Canvas = ({
     if (!isResizingRef.current) {
       toggleCursor(x, y);
     }
+    
   };
 
   //===============================Mouse up===============================\\
@@ -700,6 +701,7 @@ const Canvas = ({
 
     const ctx = ctxRef.current;
     ctx.closePath();
+    
   };
 
   return (

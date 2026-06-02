@@ -8,13 +8,28 @@ import { database } from "../../firebase";
 import { set, ref } from "firebase/database";
 import { onValue } from "firebase/database";
 const Room = () => {
-  const [canvasData, setCanvasData] = useState([[]]);
+  const [canvasData, setCanvasData] = useState([
+    [
+      {
+        id: "placeholder",
+        type: "placeholder",
+      },
+    ],
+  ]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentCanvas, setCurrentCanvas] = useState(canvasData[currentIndex]);
   const [loading, setLoading] = useState(true);
+  const [live, setLive] = useState();
   const { roomId } = useParams();
 
   const idRef = useRef(1);
+
+  let userId = sessionStorage.getItem("userId");
+
+  if (!userId) {
+    userId = crypto.randomUUID();
+    sessionStorage.setItem("userId", userId);
+  }
 
   //====================firebase data read/write===============\\
   useEffect(() => {
@@ -22,18 +37,33 @@ const Room = () => {
   }, []);
 
   useEffect(() => {
+    if (loading) return;
+    set(ref(database, `rooms/${roomId}/canvasData`), {
+      canvasData,
+      currentIndex,
+    });
+  }, [canvasData, currentIndex, loading]);
+
+  useEffect(() => {
+    if (!live) return;
+    set(ref(database, `rooms/${roomId}/live/${userId}`),live);
+  }, [live]);
+
+  useEffect(() => {
     const roomRef = ref(database, `rooms/${roomId}/canvasData`);
     onValue(roomRef, (snapshot) => {
       const data = snapshot.val();
-      setCurrentCanvas(data || []);
+
+      if (!data) {
+        setLoading(false);
+        return;
+      }
+      setCanvasData(data.canvasData || [[]]);
+      setCurrentIndex(data.currentIndex || 0);
+      setCurrentCanvas(data.canvasData[data.currentIndex] || []);
       setLoading(false);
     });
   }, []);
-
-  useEffect(() => {
-    if (loading) return;
-    set(ref(database, `rooms/${roomId}/canvasData`), currentCanvas);
-  }, [currentCanvas,loading]);
 
   const addText = () => {
     const data = {
