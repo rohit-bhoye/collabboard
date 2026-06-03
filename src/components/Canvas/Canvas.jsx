@@ -1,5 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./Canvas.css";
+import { useParams } from "react-router-dom";
+import { remove } from "firebase/database";
+import { database } from "../../firebase";
+import { ref } from "firebase/database";
 
 const Canvas = ({
   currentIndex,
@@ -8,6 +12,9 @@ const Canvas = ({
   setCanvasData,
   currentCanvas,
   setCurrentCanvas,
+  live,
+  setLive,
+  userId,
 }) => {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
@@ -23,6 +30,9 @@ const Canvas = ({
 
   const offsetXRef = useRef(null);
   const offsetYRef = useRef(null);
+
+  const { roomId } = useParams();
+  const isRoom = Boolean(roomId);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -536,7 +546,6 @@ const Canvas = ({
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    console.log(x, y, "hell");
     //resize activation
     if (activehandleRef.current) {
       isResizingRef.current = true;
@@ -592,7 +601,6 @@ const Canvas = ({
         selectedElement = true;
         offsetXRef.current = x - element.x;
         offsetYRef.current = y - element.y;
-        console.log("Inside");
         break;
       }
     }
@@ -661,26 +669,38 @@ const Canvas = ({
 
     //========================================Drag start logic==============================================
 
-    if (isDraggingRef.current && !isResizingRef.current) {
-      setCurrentCanvas((prev) =>
-        prev.map((element) => {
-          if (element.id === selectedElementIdRef.current) {
-            return {
-              ...element,
-              x: x - offsetXRef.current,
-              y: y - offsetYRef.current,
-            };
-          } else {
-            return element;
-          }
-        }),
-      );
+    if (isRoom) {
+      if (isDraggingRef.current && !isResizingRef.current) {
+        const updated = {
+          shapeId: selectedElementIdRef.current,
+          type: "MOVE",
+          x: x - offsetXRef.current,
+          y: y - offsetYRef.current,
+        };
+        console.log("SENDING", updated);
+        setLive(updated);
+      }
+    } else {
+      if (isDraggingRef.current && !isResizingRef.current) {
+        setCurrentCanvas((prev) =>
+          prev.map((element) => {
+            if (element.id === selectedElementIdRef.current) {
+              return {
+                ...element,
+                x: x - offsetXRef.current,
+                y: y - offsetYRef.current,
+              };
+            } else {
+              return element;
+            }
+          }),
+        );
+      }
     }
 
     if (!isResizingRef.current) {
       toggleCursor(x, y);
     }
-    
   };
 
   //===============================Mouse up===============================\\
@@ -695,13 +715,15 @@ const Canvas = ({
       setCanvasData(newCanvasData);
       setCurrentIndex(newCanvasData.length - 1);
     }
+    if (isRoom) {
+      remove(ref(database, `rooms/${roomId}/live/${userId}`));
+    }
 
     isResizingRef.current = false;
     isDraggingRef.current = false;
 
     const ctx = ctxRef.current;
     ctx.closePath();
-    
   };
 
   return (

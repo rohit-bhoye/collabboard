@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./Room.css";
 import Canvas from "../../components/Canvas/Canvas";
 import { useParams } from "react-router-dom";
@@ -19,10 +19,8 @@ const Room = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentCanvas, setCurrentCanvas] = useState(canvasData[currentIndex]);
   const [loading, setLoading] = useState(true);
-  const [live, setLive] = useState();
+  const [live, setLive] = useState(null);
   const { roomId } = useParams();
-
-  const idRef = useRef(1);
 
   let userId = sessionStorage.getItem("userId");
 
@@ -46,8 +44,39 @@ const Room = () => {
 
   useEffect(() => {
     if (!live) return;
-    set(ref(database, `rooms/${roomId}/live/${userId}`),live);
+    set(ref(database, `rooms/${roomId}/live/${userId}`), live);
   }, [live]);
+
+  useEffect(() => {
+    const roomRef = ref(database, `rooms/${roomId}/live`);
+
+    const unsubscribe = onValue(roomRef, (snapshot) => {
+      const liveData = snapshot.val();
+
+      if (!liveData) return;
+
+      setCurrentCanvas((prev) => {
+        return prev.map((element) => {
+          let updatedElement = element;
+
+          Object.entries(liveData).forEach(([id, live]) => {
+           
+            if (element.id === live.shapeId) {
+              updatedElement = {
+                ...element,
+                x: live.x,
+                y: live.y,
+              };
+            }
+          });
+
+          return updatedElement;
+        });
+      });
+    });
+
+    return () => unsubscribe();
+  }, [roomId, userId]);
 
   useEffect(() => {
     const roomRef = ref(database, `rooms/${roomId}/canvasData`);
@@ -67,7 +96,7 @@ const Room = () => {
 
   const addText = () => {
     const data = {
-      id: idRef.current,
+      id: crypto.randomUUID(),
       type: "text",
       x: Math.round(window.innerWidth / 2 - 100),
       y: Math.round(window.innerHeight / 2 - 60),
@@ -84,12 +113,11 @@ const Room = () => {
     setCanvasData(newCanvasData);
     setCurrentIndex(newCanvasData.length - 1);
     setCurrentCanvas(newCanvasData[newCanvasData.length - 1]);
-    idRef.current = idRef.current + 1;
   };
 
   const addRectangle = () => {
     const data = {
-      id: idRef.current,
+      id: crypto.randomUUID(),
       type: "rect",
       x: Math.round(window.innerWidth / 2 - 100),
       y: Math.round(window.innerHeight / 2 - 60),
@@ -104,7 +132,6 @@ const Room = () => {
     setCanvasData(newCanvasData);
     setCurrentIndex(newCanvasData.length - 1);
     setCurrentCanvas(newCanvasData[newCanvasData.length - 1]);
-    idRef.current = idRef.current + 1;
   };
   return (
     <div>
@@ -118,6 +145,9 @@ const Room = () => {
         setCurrentIndex={setCurrentIndex}
         currentCanvas={currentCanvas}
         setCurrentCanvas={setCurrentCanvas}
+        live={live}
+        setLive={setLive}
+        userId={userId}
       />
     </div>
   );
