@@ -60,13 +60,33 @@ const Room = () => {
           let updatedElement = element;
 
           Object.entries(liveData).forEach(([id, live]) => {
-           
             if (element.id === live.shapeId) {
-              updatedElement = {
-                ...element,
-                x: live.x,
-                y: live.y,
-              };
+              if (live.type === "MOVE") {
+                updatedElement = {
+                  ...element,
+                  x: live.x,
+                  y: live.y,
+                };
+              } else if (live.type === "RESIZE") {
+                if (element.type === "rect") {
+                  updatedElement = {
+                    ...element,
+                    x: live.x,
+                    y: live.y,
+                    width: live.width,
+                    height: live.height,
+                  };
+                } else if (element.type === "text") {
+                  updatedElement = {
+                    ...element,
+                    x: live.x,
+                    y: live.y,
+                    width: live.width,
+                    height: live.height,
+                    fontSize: live.fontSize,
+                  };
+                }
+              }
             }
           });
 

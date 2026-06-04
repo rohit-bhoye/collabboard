@@ -624,40 +624,92 @@ const Canvas = ({
 
     //========================================resize start logic========================================
 
-    if (isResizingRef.current && selectedElementRef.current) {
-      const oldRight = selectedElementRef.current.right;
-      const oldBottom = selectedElementRef.current.bottom;
-      const oldLeft = selectedElementRef.current.left;
-      const oldTop = selectedElementRef.current.top;
-      setCurrentCanvas((prev) =>
-        prev.map((element) => {
-          if (element.id === selectedElementIdRef.current) {
-            if (element.type === "rect") {
-              return resizeRectangle(
-                element,
-                oldRight,
-                oldBottom,
-                oldLeft,
-                oldTop,
-                x,
-                y,
-              );
-            } else if (element.type === "text") {
-              return resizeText(
-                element,
-                oldRight,
-                oldBottom,
-                oldLeft,
-                oldTop,
-                x,
-                y,
-              );
+    if (isRoom) {
+      if (isResizingRef.current && selectedElementRef.current) {
+        const oldRight = selectedElementRef.current.right;
+        const oldBottom = selectedElementRef.current.bottom;
+        const oldLeft = selectedElementRef.current.left;
+        const oldTop = selectedElementRef.current.top;
+        let updatedElement = null;
+        if (selectedElementRef.current.type === "rect") {
+          updatedElement = resizeRectangle(
+            selectedElementRef.current,
+            oldRight,
+            oldBottom,
+            oldLeft,
+            oldTop,
+            x,
+            y,
+          );
+
+          const updated = {
+            shapeId: updatedElement.id,
+            type: "RESIZE",
+            x: updatedElement.x,
+            y: updatedElement.y,
+            width: updatedElement.width,
+            height: updatedElement.height,
+          };
+          setLive(updated);
+        } else if (selectedElementRef.current.type === "text") {
+          updatedElement = resizeText(
+            selectedElementRef.current,
+            oldRight,
+            oldBottom,
+            oldLeft,
+            oldTop,
+            x,
+            y,
+          );
+
+          const updated = {
+            shapeId: updatedElement.id,
+            type: "RESIZE",
+            x: updatedElement.x,
+            y: updatedElement.y,
+            width: updatedElement.width,
+            height: updatedElement.height,
+            fontSize: updatedElement.fontSize,
+          };
+          setLive(updated);
+        }
+      }
+    } else {
+      if (isResizingRef.current && selectedElementRef.current) {
+        const oldRight = selectedElementRef.current.right;
+        const oldBottom = selectedElementRef.current.bottom;
+        const oldLeft = selectedElementRef.current.left;
+        const oldTop = selectedElementRef.current.top;
+        setCurrentCanvas((prev) =>
+          prev.map((element) => {
+            if (element.id === selectedElementIdRef.current) {
+              if (element.type === "rect") {
+                return resizeRectangle(
+                  element,
+                  oldRight,
+                  oldBottom,
+                  oldLeft,
+                  oldTop,
+                  x,
+                  y,
+                );
+              } else if (element.type === "text") {
+                return resizeText(
+                  element,
+                  oldRight,
+                  oldBottom,
+                  oldLeft,
+                  oldTop,
+                  x,
+                  y,
+                );
+              }
+            } else {
+              return element;
             }
-          } else {
-            return element;
-          }
-        }),
-      );
+          }),
+        );
+      }
     }
 
     // const midX = (lastXRef.current + x) / 2;
@@ -677,7 +729,6 @@ const Canvas = ({
           x: x - offsetXRef.current,
           y: y - offsetYRef.current,
         };
-        console.log("SENDING", updated);
         setLive(updated);
       }
     } else {
