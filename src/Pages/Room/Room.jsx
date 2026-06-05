@@ -130,6 +130,11 @@ const Room = () => {
       ...canvasData.slice(0, currentIndex + 1),
       [...canvasData[currentIndex], data],
     ];
+
+    const MAX_HISTORY = 50;
+    if (newCanvasData.length > MAX_HISTORY) {
+      newCanvasData.shift();
+    }
     setCanvasData(newCanvasData);
     setCurrentIndex(newCanvasData.length - 1);
     setCurrentCanvas(newCanvasData[newCanvasData.length - 1]);
@@ -149,6 +154,11 @@ const Room = () => {
       ...canvasData.slice(0, currentIndex + 1),
       [...canvasData[currentIndex], data],
     ];
+    const MAX_HISTORY = 50;
+
+    if (newCanvasData.length > MAX_HISTORY) {
+      newCanvasData.shift();
+    }
     setCanvasData(newCanvasData);
     setCurrentIndex(newCanvasData.length - 1);
     setCurrentCanvas(newCanvasData[newCanvasData.length - 1]);

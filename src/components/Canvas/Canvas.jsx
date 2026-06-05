@@ -33,6 +33,7 @@ const Canvas = ({
 
   const { roomId } = useParams();
   const isRoom = Boolean(roomId);
+  
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -763,6 +764,12 @@ const Canvas = ({
         ...canvasData.slice(0, currentIndex + 1),
         currentCanvas.map((element) => ({ ...element })),
       ];
+      const MAX_HISTORY = 50;
+      console.log("before", newCanvasData.length);
+      if( newCanvasData.length > MAX_HISTORY){
+        newCanvasData.shift();
+      }
+      console.log("after", newCanvasData.length);
       setCanvasData(newCanvasData);
       setCurrentIndex(newCanvasData.length - 1);
     }
