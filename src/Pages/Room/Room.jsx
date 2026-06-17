@@ -40,12 +40,12 @@ const Room = () => {
       canvasData,
       currentIndex,
     });
-  }, [canvasData, currentIndex, loading]);
+  }, [canvasData, currentIndex, loading,roomId]);
 
   useEffect(() => {
     if (!live) return;
     set(ref(database, `rooms/${roomId}/live/${userId}`), live);
-  }, [live]);
+  }, [live,roomId, userId]);
 
   useEffect(() => {
     const roomRef = ref(database, `rooms/${roomId}/live`);
@@ -100,7 +100,7 @@ const Room = () => {
 
   useEffect(() => {
     const roomRef = ref(database, `rooms/${roomId}/canvasData`);
-    onValue(roomRef, (snapshot) => {
+    const unsubscribe = onValue(roomRef, (snapshot) => {
       const data = snapshot.val();
 
       if (!data) {
@@ -109,10 +109,11 @@ const Room = () => {
       }
       setCanvasData(data.canvasData || [[]]);
       setCurrentIndex(data.currentIndex || 0);
-      setCurrentCanvas(data.canvasData[data.currentIndex] || []);
+      setCurrentCanvas(data.canvasData?.[data.currentIndex] || []);
       setLoading(false);
     });
-  }, []);
+    return () => unsubscribe();
+  }, [roomId]);
 
   const addText = () => {
     const data = {
@@ -131,7 +132,7 @@ const Room = () => {
       [...canvasData[currentIndex], data],
     ];
 
-    const MAX_HISTORY = 50;
+    const MAX_HISTORY = 20;
     if (newCanvasData.length > MAX_HISTORY) {
       newCanvasData.shift();
     }
@@ -154,7 +155,7 @@ const Room = () => {
       ...canvasData.slice(0, currentIndex + 1),
       [...canvasData[currentIndex], data],
     ];
-    const MAX_HISTORY = 50;
+    const MAX_HISTORY = 20;
 
     if (newCanvasData.length > MAX_HISTORY) {
       newCanvasData.shift();

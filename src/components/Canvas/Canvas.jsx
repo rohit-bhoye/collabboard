@@ -33,7 +33,6 @@ const Canvas = ({
 
   const { roomId } = useParams();
   const isRoom = Boolean(roomId);
-  
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -56,6 +55,7 @@ const Canvas = ({
       width = element.width;
       height = element.height;
     } else if (element.type === "text") {
+      ctx.font = `${element.fontSize}px sans-serif`;
       width = ctx.measureText(element.text).width;
       height = element.fontSize;
     }
@@ -83,7 +83,12 @@ const Canvas = ({
       y >= element.y + height - tol &&
       y <= element.y + height + tol;
 
-    return isBottomLeft || isBottomRight || isTopLeft || isTopRight || null;
+    if (isTopLeft) return "isTopLeft";
+    if (isTopRight) return "isTopRight";
+    if (isBottomLeft) return "isBottomLeft";
+    if (isBottomRight) return "isBottomRight";
+
+    return null;
   };
 
   //===============*inside shape*================
@@ -96,6 +101,7 @@ const Canvas = ({
       width = element.width;
       height = element.height;
     } else if (element.type === "text") {
+      ctx.font = `${element.fontSize}px sans-serif`;
       width = ctx.measureText(element.text).width;
       height = element.fontSize;
     }
@@ -397,7 +403,8 @@ const Canvas = ({
         ctx.fillText(element.text, element.x, element.y);
         const textWidth = ctx.measureText(element.text).width;
         const textHeight = element.fontSize;
-        const padding = 2;
+        const padding = 4;
+
         if (element.id === selectedElementIdRef.current) {
           hitDetectionBorder(
             element.x - padding,
@@ -452,10 +459,15 @@ const Canvas = ({
           (element) => element.id !== idToDelete,
         );
         setCurrentCanvas(updatedCurrentCanvas);
+        const MAX_HISTORY = 20;
         const newCanvasData = [
           ...canvasData.slice(0, currentIndex + 1),
           updatedCurrentCanvas.map((element) => ({ ...element })),
         ];
+
+        if (newCanvasData.length > MAX_HISTORY) {
+          newCanvasData.shift();
+        }
         setCanvasData(newCanvasData);
         setCurrentIndex(newCanvasData.length - 1);
         selectedElementIdRef.current = null;
@@ -476,62 +488,22 @@ const Canvas = ({
 
     if (!selectedElementIdRef.current) {
       canvas.style.cursor = "default";
+      activehandleRef.current = null;
       return;
     }
 
-    const currentElement = canvasData[currentIndex].find(
+    const currentElement = currentCanvas.find(
       (element) => element.id === selectedElementIdRef.current,
     );
     if (!currentElement) return;
-    const ctx = ctxRef.current;
-    let width;
-    let height;
-    if (currentElement.type === "rect") {
-      width = currentElement.width;
-      height = currentElement.height;
-    } else if (currentElement.type === "text") {
-      width = ctx.measureText(currentElement.text).width;
-      height = currentElement.fontSize;
-    }
-    const { x: elementX, y: elementY } = currentElement;
-    const tol = 5;
+    const handle = getResizeHandle(currentElement, x, y, 10);
 
-    const isTopLeft =
-      x >= elementX - tol &&
-      x <= elementX + tol &&
-      y >= elementY - tol &&
-      y <= elementY + tol;
-
-    const isTopRight =
-      x >= elementX + width - tol &&
-      x <= elementX + width + tol &&
-      y >= elementY - tol &&
-      y <= elementY + tol;
-
-    const isBottomLeft =
-      x >= elementX - tol &&
-      x <= elementX + tol &&
-      y >= elementY + height - tol &&
-      y <= elementY + height + tol;
-
-    const isBottomRight =
-      x >= elementX + width - tol &&
-      x <= elementX + width + tol &&
-      y >= elementY + height - tol &&
-      y <= elementY + height + tol;
-
-    if (isTopLeft) {
+    if (handle === "isTopLeft" || handle === "isBottomRight") {
       canvas.style.cursor = "nwse-resize";
-      activehandleRef.current = "isTopLeft";
-    } else if (isBottomRight) {
-      canvas.style.cursor = "nwse-resize";
-      activehandleRef.current = "isBottomRight";
-    } else if (isTopRight) {
+      activehandleRef.current = handle;
+    } else if (handle === "isTopRight" || handle === "isBottomLeft") {
       canvas.style.cursor = "nesw-resize";
-      activehandleRef.current = "isTopRight";
-    } else if (isBottomLeft) {
-      canvas.style.cursor = "nesw-resize";
-      activehandleRef.current = "isBottomLeft";
+      activehandleRef.current = handle;
     } else {
       canvas.style.cursor = "default";
       activehandleRef.current = null;
@@ -547,12 +519,7 @@ const Canvas = ({
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    //resize activation
-    if (activehandleRef.current) {
-      isResizingRef.current = true;
-    } else {
-      isResizingRef.current = false;
-    }
+
     // ctx.beginPath();
     // ctx.moveTo(x, y);
     lastXRef.current = x;
@@ -568,33 +535,32 @@ const Canvas = ({
       //resize and drag selection logic
 
       if (handle) {
-        if (isResizingRef.current) {
-          const ctx = ctxRef.current;
-          let width;
-          let height;
-          if (element.type === "rect") {
-            width = element.width;
-            height = element.height;
-          } else if (element.type === "text") {
-            ctx.font = `${element.fontSize}px sans-serif`;
-            width = ctx.measureText(element.text).width;
-            height = element.fontSize;
-          }
-          selectedElementIdRef.current = element.id;
-          selectedElementRef.current = {
-            ...element,
-            right: element.x + width,
-            bottom: element.y + height,
-            left: element.x,
-            top: element.y,
-            width: width,
-            height: height,
-          };
-          offsetXRef.current = x;
-          offsetYRef.current = y;
+        activehandleRef.current = handle;
+        isResizingRef.current = true;
 
-          selectedElement = true;
+        let width;
+        let height;
+        if (element.type === "rect") {
+          width = element.width;
+          height = element.height;
+        } else if (element.type === "text") {
+          ctx.font = `${element.fontSize}px sans-serif`;
+          width = ctx.measureText(element.text).width;
+          height = element.fontSize;
         }
+        selectedElementIdRef.current = element.id;
+        selectedElementRef.current = {
+          ...element,
+          right: element.x + width,
+          bottom: element.y + height,
+          left: element.x,
+          top: element.y,
+          width: width,
+          height: height,
+        };
+        offsetXRef.current = x;
+        offsetYRef.current = y;
+        selectedElement = true;
         break;
       } else if (inside) {
         selectedElementIdRef.current = element.id;
@@ -609,6 +575,8 @@ const Canvas = ({
     if (!selectedElement) {
       selectedElementIdRef.current = null;
       selectedElementRef.current = null;
+      activehandleRef.current = null;
+      canvas.style.cursor = "default";
     }
     draw();
   };
@@ -764,12 +732,12 @@ const Canvas = ({
         ...canvasData.slice(0, currentIndex + 1),
         currentCanvas.map((element) => ({ ...element })),
       ];
-      const MAX_HISTORY = 50;
-      console.log("before", newCanvasData.length);
-      if( newCanvasData.length > MAX_HISTORY){
+      const MAX_HISTORY = 20;
+
+      if (newCanvasData.length > MAX_HISTORY) {
         newCanvasData.shift();
       }
-      console.log("after", newCanvasData.length);
+
       setCanvasData(newCanvasData);
       setCurrentIndex(newCanvasData.length - 1);
     }
@@ -790,6 +758,7 @@ const Canvas = ({
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
     ></canvas>
   );
 };
