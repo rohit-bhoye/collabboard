@@ -24,6 +24,9 @@ const Canvas = ({
   const isDraggingRef = useRef(false);
   const selectedElementIdRef = useRef(null);
 
+  const lastLiveTimeRef = useRef(0);
+  const latestLiveRef = useRef(null);
+
   const isResizingRef = useRef(false);
   const activehandleRef = useRef(null);
   const selectedElementRef = useRef(null);
@@ -44,6 +47,19 @@ const Canvas = ({
   }, []);
 
   //===============***================Helper Functions===============***================\\
+
+  //===============*Throttle*================
+
+  const LIVE_INTERVAL = 1000 / 50;
+  const sendLive = (updated) => {
+    latestLiveRef.current = updated;
+    const now = performance.now();
+
+    if (now - lastLiveTimeRef.current >= LIVE_INTERVAL) {
+      lastLiveTimeRef.current = now;
+      setLive(updated);
+    }
+  };
 
   //===============*resize handle*================
 
@@ -619,7 +635,7 @@ const Canvas = ({
             width: updatedElement.width,
             height: updatedElement.height,
           };
-          setLive(updated);
+          sendLive(updated);
         } else if (selectedElementRef.current.type === "text") {
           updatedElement = resizeText(
             selectedElementRef.current,
@@ -640,7 +656,7 @@ const Canvas = ({
             height: updatedElement.height,
             fontSize: updatedElement.fontSize,
           };
-          setLive(updated);
+          sendLive(updated);
         }
       }
     } else {
@@ -698,7 +714,7 @@ const Canvas = ({
           x: x - offsetXRef.current,
           y: y - offsetYRef.current,
         };
-        setLive(updated);
+        sendLive(updated);
       }
     } else {
       if (isDraggingRef.current && !isResizingRef.current) {
@@ -742,7 +758,12 @@ const Canvas = ({
       setCurrentIndex(newCanvasData.length - 1);
     }
     if (isRoom) {
+      if (latestLiveRef.current) {
+        setLive(latestLiveRef.current);
+      }
+
       remove(ref(database, `rooms/${roomId}/live/${userId}`));
+      latestLiveRef.current = null;
     }
 
     isResizingRef.current = false;
