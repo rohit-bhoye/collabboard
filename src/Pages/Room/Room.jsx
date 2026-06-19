@@ -20,6 +20,8 @@ const Room = () => {
   const [currentCanvas, setCurrentCanvas] = useState(canvasData[currentIndex]);
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState(null);
+  const [liveCursor, setLiveCursor] = useState(null);
+  const [liveCursorsData, setLiveCursorsData] = useState([]);
   const { roomId } = useParams();
 
   let userId = sessionStorage.getItem("userId");
@@ -40,12 +42,12 @@ const Room = () => {
       canvasData,
       currentIndex,
     });
-  }, [canvasData, currentIndex, loading,roomId]);
+  }, [canvasData, currentIndex, loading, roomId]);
 
   useEffect(() => {
     if (!live) return;
     set(ref(database, `rooms/${roomId}/live/${userId}`), live);
-  }, [live,roomId, userId]);
+  }, [live, roomId, userId]);
 
   useEffect(() => {
     const roomRef = ref(database, `rooms/${roomId}/live`);
@@ -179,6 +181,8 @@ const Room = () => {
         live={live}
         setLive={setLive}
         userId={userId}
+        liveCursor={liveCursor}
+        setLiveCursor={setLiveCursor}
       />
     </div>
   );

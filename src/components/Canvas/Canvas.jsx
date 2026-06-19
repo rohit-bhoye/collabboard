@@ -15,6 +15,8 @@ const Canvas = ({
   live,
   setLive,
   userId,
+  liveCursor,
+  setLiveCursor,
 }) => {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
@@ -58,6 +60,13 @@ const Canvas = ({
     if (now - lastLiveTimeRef.current >= LIVE_INTERVAL) {
       lastLiveTimeRef.current = now;
       setLive(updated);
+    }
+  };
+
+  const sendCursor = (x, y) => {
+    let data = {
+      x:x,
+      y:y
     }
   };
 
@@ -606,6 +615,8 @@ const Canvas = ({
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
+    sendCursor(x, y);
 
     //========================================resize start logic========================================
 
