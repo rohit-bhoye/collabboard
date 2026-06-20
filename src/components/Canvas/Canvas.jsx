@@ -17,6 +17,7 @@ const Canvas = ({
   userId,
   liveCursor,
   setLiveCursor,
+  liveCursorsData,
 }) => {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
@@ -65,9 +66,10 @@ const Canvas = ({
 
   const sendCursor = (x, y) => {
     let data = {
-      x:x,
-      y:y
-    }
+      x: x,
+      y: y,
+    };
+    setLiveCursor(data);
   };
 
   //===============*resize handle*================
@@ -394,6 +396,29 @@ const Canvas = ({
     }
   };
 
+  const drawRemoteCursor = (ctx, cursor, id) => {
+    ctx.save();
+
+    const x = cursor.x;
+    const y = cursor.y;
+
+    // cursor triangle
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 12, y + 5);
+    ctx.lineTo(x + 5, y + 12);
+    ctx.closePath();
+
+    ctx.fillStyle = "black";
+    ctx.fill();
+
+    // small user label
+    ctx.font = "12px sans-serif";
+    ctx.fillText(id.slice(0, 4), x + 14, y + 14);
+
+    ctx.restore();
+  };
+
   //===============================Draw Shapes===============================\\
 
   const draw = () => {
@@ -440,11 +465,18 @@ const Canvas = ({
         }
       }
     });
+
+    Object.entries(liveCursorsData).forEach(([id, cursor]) => {
+      if (id === userId) return; // don't draw my own cursor
+      if (cursor.x == null || cursor.y == null) return;
+
+      drawRemoteCursor(ctx, cursor, id);
+    });
   };
 
   useEffect(() => {
     draw();
-  }, [currentCanvas]);
+  }, [currentCanvas, liveCursorsData, userId]);
 
   //===============================(DELETE) and (Undo/Redo)===============================\\
   useEffect(() => {
@@ -616,7 +648,9 @@ const Canvas = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    sendCursor(x, y);
+    if (isRoom) {
+      sendCursor(x, y);
+    }
 
     //========================================resize start logic========================================
 

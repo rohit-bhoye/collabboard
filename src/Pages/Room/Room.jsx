@@ -21,9 +21,10 @@ const Room = () => {
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState(null);
   const [liveCursor, setLiveCursor] = useState(null);
-  const [liveCursorsData, setLiveCursorsData] = useState([]);
+  const [liveCursorsData, setLiveCursorsData] = useState({});
   const { roomId } = useParams();
 
+  console.log(liveCursorsData)
   let userId = sessionStorage.getItem("userId");
 
   if (!userId) {
@@ -35,6 +36,27 @@ const Room = () => {
   useEffect(() => {
     set(ref(database, `rooms/${roomId}/createdAt`), Date.now());
   }, []);
+
+  useEffect(() => {
+    if (!liveCursor) return;
+    set(ref(database, `rooms/${roomId}/liveCursor/${userId}`), liveCursor);
+  }, [liveCursor, roomId, userId]);
+
+  useEffect(() => {
+    const roomRef = ref(database, `rooms/${roomId}/liveCursor/`);
+    const unsubscribe = onValue(roomRef, (snapshot) => {
+      const data = snapshot.val();
+
+      if (!data) {
+        setLiveCursorsData({});
+        return;
+      }
+
+      setLiveCursorsData(data);
+    });
+
+    return () => unsubscribe();
+  }, [roomId, userId]);
 
   useEffect(() => {
     if (loading) return;
@@ -183,6 +205,7 @@ const Room = () => {
         userId={userId}
         liveCursor={liveCursor}
         setLiveCursor={setLiveCursor}
+        liveCursorsData={liveCursorsData}
       />
     </div>
   );
