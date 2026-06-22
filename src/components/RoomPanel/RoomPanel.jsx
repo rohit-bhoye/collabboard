@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./RoomPanel.css";
 import { useNavigate, useParams } from "react-router-dom";
-const RoomPanel = () => {
+const RoomPanel = ({ setCheckingRoom, activeUsers }) => {
   const [joinRoomId, setJoinRoomId] = useState("");
   const { roomId } = useParams();
   const navigate = useNavigate();
@@ -12,6 +12,7 @@ const RoomPanel = () => {
 
   const handleJoinRoom = () => {
     if (!joinRoomId.trim()) return;
+    setCheckingRoom(true);
     navigate(`/room/${joinRoomId}`);
   };
   return (
@@ -41,7 +42,7 @@ const RoomPanel = () => {
           </p>
           <button className="share-btn">Share</button>
           <p className="usersOnline">
-            Users online: <span>5</span>
+            Users online: <span>{activeUsers}</span>
           </p>
         </div>
       )}

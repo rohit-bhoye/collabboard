@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from "react";
 import "./Room.css";
 import Canvas from "../../components/Canvas/Canvas";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import RoomPanel from "../../components/RoomPanel/RoomPanel";
 import ToolBar from "../../components/ToolBar/ToolBar";
 import { database } from "../../firebase";
-import { set, ref } from "firebase/database";
+import {
+  set,
+  ref,
+  runTransaction,
+  onDisconnect,
+  remove,
+} from "firebase/database";
 import { onValue } from "firebase/database";
-const Room = () => {
+import toast from "react-hot-toast";
+const Room = ({ checkingRoom, setCheckingRoom }) => {
   const [canvasData, setCanvasData] = useState([
     [
       {
@@ -22,9 +29,12 @@ const Room = () => {
   const [live, setLive] = useState(null);
   const [liveCursor, setLiveCursor] = useState(null);
   const [liveCursorsData, setLiveCursorsData] = useState({});
+  const [allowedInRoom, setAllowedInRoom] = useState(false);
+  const [activeUsers,setActiveUsers] = useState(0);
   const { roomId } = useParams();
 
-  console.log(liveCursorsData)
+  const MAX_USERS = 5;
+  const navigate = useNavigate();
   let userId = sessionStorage.getItem("userId");
 
   if (!userId) {
@@ -33,16 +43,82 @@ const Room = () => {
   }
 
   //====================firebase data read/write===============\\
+
   useEffect(() => {
+    if (!allowedInRoom) return;
     set(ref(database, `rooms/${roomId}/createdAt`), Date.now());
-  }, []);
+  }, [allowedInRoom]);
+
+  useEffect(()=>{
+    if(!allowedInRoom)return;
+     const userRef = ref(database, `rooms/${roomId}/users/`);
+     const unsubscribe= onValue(userRef, (snapShot)=>{
+      const data = snapShot.val();
+      if(!data) {
+        setActiveUsers(0);
+        return;
+      };
+
+      setActiveUsers(Object.keys(data).length);
+     })
+
+     return ()=> unsubscribe();
+  },[allowedInRoom,roomId])
 
   useEffect(() => {
-    if (!liveCursor) return;
+    if (!roomId || !userId) return;
+    const userRef = ref(database, `rooms/${roomId}/users/`);
+    const currentUserRef = ref(database, `rooms/${roomId}/users/${userId}`);
+    let joinedRoom = false;
+
+    const joinRoom = async () => {
+      const result = await runTransaction(userRef, (users) => {
+        if (!users) {
+          users = {};
+        }
+
+        if (users[userId]) {
+          return users;
+        }
+        const totalUsers = Object.keys(users).length;
+
+        if (totalUsers >= MAX_USERS) return;
+
+        users[userId] = { joinedAt: Date.now() };
+        return users;
+      });
+
+      if (!result.committed) {
+        toast.error("Room is full", { duration: 3000 });
+        setCheckingRoom(false);
+        setAllowedInRoom(false);
+        navigate("/");
+        return;
+      }
+
+      joinedRoom = true;
+      setCheckingRoom(false);
+      setAllowedInRoom(true);
+
+      onDisconnect(currentUserRef).remove();
+    };
+
+    joinRoom();
+
+    return () => {
+      if (joinedRoom) {
+        remove(currentUserRef);
+      }
+    };
+  }, [roomId, userId, navigate]);
+
+  useEffect(() => {
+    if (!liveCursor || !allowedInRoom) return;
     set(ref(database, `rooms/${roomId}/liveCursor/${userId}`), liveCursor);
-  }, [liveCursor, roomId, userId]);
+  }, [allowedInRoom, liveCursor, roomId, userId]);
 
   useEffect(() => {
+    if (!allowedInRoom) return;
     const roomRef = ref(database, `rooms/${roomId}/liveCursor/`);
     const unsubscribe = onValue(roomRef, (snapshot) => {
       const data = snapshot.val();
@@ -56,22 +132,23 @@ const Room = () => {
     });
 
     return () => unsubscribe();
-  }, [roomId, userId]);
+  }, [allowedInRoom, roomId, userId]);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || !allowedInRoom) return;
     set(ref(database, `rooms/${roomId}/canvasData`), {
       canvasData,
       currentIndex,
     });
-  }, [canvasData, currentIndex, loading, roomId]);
+  }, [allowedInRoom, canvasData, currentIndex, loading, roomId]);
 
   useEffect(() => {
-    if (!live) return;
+    if (!live || !allowedInRoom) return;
     set(ref(database, `rooms/${roomId}/live/${userId}`), live);
-  }, [live, roomId, userId]);
+  }, [allowedInRoom, live, roomId, userId]);
 
   useEffect(() => {
+    if (!allowedInRoom) return;
     const roomRef = ref(database, `rooms/${roomId}/live`);
 
     const unsubscribe = onValue(roomRef, (snapshot) => {
@@ -120,9 +197,10 @@ const Room = () => {
     });
 
     return () => unsubscribe();
-  }, [roomId, userId]);
+  }, [allowedInRoom, roomId, userId]);
 
   useEffect(() => {
+    if (!allowedInRoom) return;
     const roomRef = ref(database, `rooms/${roomId}/canvasData`);
     const unsubscribe = onValue(roomRef, (snapshot) => {
       const data = snapshot.val();
@@ -137,7 +215,7 @@ const Room = () => {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [roomId]);
+  }, [allowedInRoom, roomId]);
 
   const addText = () => {
     const data = {
@@ -188,25 +266,33 @@ const Room = () => {
     setCurrentIndex(newCanvasData.length - 1);
     setCurrentCanvas(newCanvasData[newCanvasData.length - 1]);
   };
+
+  if (checkingRoom) {
+    return <div className="checking-room">Loading...</div>;
+  }
   return (
     <div>
-      <h1 className="roomId-title">Room:{roomId}</h1>
-      <RoomPanel />
-      <ToolBar addRectangle={addRectangle} addText={addText} />
-      <Canvas
-        canvasData={canvasData}
-        setCanvasData={setCanvasData}
-        currentIndex={currentIndex}
-        setCurrentIndex={setCurrentIndex}
-        currentCanvas={currentCanvas}
-        setCurrentCanvas={setCurrentCanvas}
-        live={live}
-        setLive={setLive}
-        userId={userId}
-        liveCursor={liveCursor}
-        setLiveCursor={setLiveCursor}
-        liveCursorsData={liveCursorsData}
-      />
+      {allowedInRoom && (
+        <>
+          <h1 className="roomId-title">Room:{roomId}</h1>
+          <RoomPanel activeUsers={activeUsers}/>
+          <ToolBar addRectangle={addRectangle} addText={addText} />
+          <Canvas
+            canvasData={canvasData}
+            setCanvasData={setCanvasData}
+            currentIndex={currentIndex}
+            setCurrentIndex={setCurrentIndex}
+            currentCanvas={currentCanvas}
+            setCurrentCanvas={setCurrentCanvas}
+            live={live}
+            setLive={setLive}
+            userId={userId}
+            liveCursor={liveCursor}
+            setLiveCursor={setLiveCursor}
+            liveCursorsData={liveCursorsData}
+          />
+        </>
+      )}
     </div>
   );
 };

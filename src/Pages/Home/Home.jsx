@@ -4,7 +4,7 @@ import Canvas from "../../components/Canvas/Canvas";
 import ToolBar from "../../components/ToolBar/ToolBar";
 import RoomPanel from "../../components/RoomPanel/RoomPanel";
 
-const Home = () => {
+const Home = ({setCheckingRoom}) => {
   const [canvasData, setCanvasData] = useState([[]]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentCanvas, setCurrentCanvas] = useState(canvasData[currentIndex]);
@@ -54,7 +54,7 @@ const Home = () => {
   };
   return (
     <div>
-      <RoomPanel />
+      <RoomPanel setCheckingRoom={setCheckingRoom}/>
       <ToolBar addRectangle={addRectangle} addText={addText} />
       <Canvas
         canvasData={canvasData}

@@ -466,12 +466,14 @@ const Canvas = ({
       }
     });
 
-    Object.entries(liveCursorsData).forEach(([id, cursor]) => {
+   if(isRoom){
+     Object.entries(liveCursorsData).forEach(([id, cursor]) => {
       if (id === userId) return; // don't draw my own cursor
       if (cursor.x == null || cursor.y == null) return;
 
       drawRemoteCursor(ctx, cursor, id);
     });
+   }
   };
 
   useEffect(() => {
