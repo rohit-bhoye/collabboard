@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./RoomPanel.css";
 import { useNavigate, useParams } from "react-router-dom";
-const RoomPanel = ({ setCheckingRoom, activeUsers }) => {
+const RoomPanel = ({ activeUsers }) => {
   const [joinRoomId, setJoinRoomId] = useState("");
   const { roomId } = useParams();
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ const RoomPanel = ({ setCheckingRoom, activeUsers }) => {
 
   const handleJoinRoom = () => {
     if (!joinRoomId.trim()) return;
-    setCheckingRoom(true);
+
     navigate(`/room/${joinRoomId}`);
   };
   return (

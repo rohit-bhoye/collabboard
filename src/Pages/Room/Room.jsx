@@ -11,10 +11,11 @@ import {
   runTransaction,
   onDisconnect,
   remove,
+  get,
 } from "firebase/database";
 import { onValue } from "firebase/database";
 import toast from "react-hot-toast";
-const Room = ({ checkingRoom, setCheckingRoom }) => {
+const Room = ({}) => {
   const [canvasData, setCanvasData] = useState([
     [
       {
@@ -30,10 +31,12 @@ const Room = ({ checkingRoom, setCheckingRoom }) => {
   const [liveCursor, setLiveCursor] = useState(null);
   const [liveCursorsData, setLiveCursorsData] = useState({});
   const [allowedInRoom, setAllowedInRoom] = useState(false);
-  const [activeUsers,setActiveUsers] = useState(0);
+  const [activeUsers, setActiveUsers] = useState(0);
+  const [checkingRoom, setCheckingRoom] = useState(true);
   const { roomId } = useParams();
 
   const MAX_USERS = 5;
+  const MAX_HISTORY = 20;
   const navigate = useNavigate();
   let userId = sessionStorage.getItem("userId");
 
@@ -46,61 +49,94 @@ const Room = ({ checkingRoom, setCheckingRoom }) => {
 
   useEffect(() => {
     if (!allowedInRoom) return;
-    set(ref(database, `rooms/${roomId}/createdAt`), Date.now());
-  }, [allowedInRoom]);
 
-  useEffect(()=>{
-    if(!allowedInRoom)return;
-     const userRef = ref(database, `rooms/${roomId}/users/`);
-     const unsubscribe= onValue(userRef, (snapShot)=>{
+    const roomRef = ref(database, `rooms/${roomId}/createdAt`);
+
+    const roomCreation = async () => {
+      try {
+        const snapShot = await get(roomRef);
+
+        if (!snapShot.exists()) {
+          await set(roomRef, Date.now());
+        }
+      } catch (error) {
+        console.error("createdAt check failed:", error);
+      }
+    };
+
+    roomCreation();
+  }, [allowedInRoom, roomId]);
+
+  useEffect(() => {
+    if (!allowedInRoom) return;
+    const userRef = ref(database, `rooms/${roomId}/users/`);
+    const unsubscribe = onValue(userRef, (snapShot) => {
       const data = snapShot.val();
-      if(!data) {
+      if (!data) {
         setActiveUsers(0);
         return;
-      };
+      }
 
       setActiveUsers(Object.keys(data).length);
-     })
+    });
 
-     return ()=> unsubscribe();
-  },[allowedInRoom,roomId])
+    return () => unsubscribe();
+  }, [allowedInRoom, roomId]);
 
   useEffect(() => {
     if (!roomId || !userId) return;
+    const roomRef = ref(database, `rooms/${roomId}/createdAt`);
+
     const userRef = ref(database, `rooms/${roomId}/users/`);
     const currentUserRef = ref(database, `rooms/${roomId}/users/${userId}`);
     let joinedRoom = false;
 
     const joinRoom = async () => {
-      const result = await runTransaction(userRef, (users) => {
-        if (!users) {
-          users = {};
-        }
+      try {
+        const snapShot = await get(roomRef);
 
-        if (users[userId]) {
+        if (!snapShot.exists()) {
+          toast.error("Invalid Room ID", { duration: 3000 });
+          setCheckingRoom(false);
+          setAllowedInRoom(false);
+          navigate("/");
+          return;
+        }
+        const result = await runTransaction(userRef, (users) => {
+          if (!users) {
+            users = {};
+          }
+
+          if (users[userId]) {
+            return users;
+          }
+          const totalUsers = Object.keys(users).length;
+
+          if (totalUsers >= MAX_USERS) return;
+
+          users[userId] = { joinedAt: Date.now() };
           return users;
+        });
+
+        if (!result.committed) {
+          toast.error("Room is full", { duration: 3000 });
+          setCheckingRoom(false);
+          setAllowedInRoom(false);
+          navigate("/");
+          return;
         }
-        const totalUsers = Object.keys(users).length;
 
-        if (totalUsers >= MAX_USERS) return;
+        joinedRoom = true;
+        setCheckingRoom(false);
+        setAllowedInRoom(true);
 
-        users[userId] = { joinedAt: Date.now() };
-        return users;
-      });
-
-      if (!result.committed) {
-        toast.error("Room is full", { duration: 3000 });
+        onDisconnect(currentUserRef).remove();
+      } catch (error) {
+        toast.error("Could not join room", { duration: 3000 });
         setCheckingRoom(false);
         setAllowedInRoom(false);
         navigate("/");
-        return;
       }
-
-      joinedRoom = true;
-      setCheckingRoom(false);
-      setAllowedInRoom(true);
-
-      onDisconnect(currentUserRef).remove();
     };
 
     joinRoom();
@@ -120,6 +156,10 @@ const Room = ({ checkingRoom, setCheckingRoom }) => {
   useEffect(() => {
     if (!allowedInRoom) return;
     const roomRef = ref(database, `rooms/${roomId}/liveCursor/`);
+    const currentUserRef = ref(
+      database,
+      `rooms/${roomId}/liveCursor/${userId}`,
+    );
     const unsubscribe = onValue(roomRef, (snapshot) => {
       const data = snapshot.val();
 
@@ -130,8 +170,11 @@ const Room = ({ checkingRoom, setCheckingRoom }) => {
 
       setLiveCursorsData(data);
     });
-
-    return () => unsubscribe();
+    onDisconnect(currentUserRef).remove();
+    return () => {
+      unsubscribe();
+      remove(currentUserRef);
+    };
   }, [allowedInRoom, roomId, userId]);
 
   useEffect(() => {
@@ -234,7 +277,6 @@ const Room = ({ checkingRoom, setCheckingRoom }) => {
       [...canvasData[currentIndex], data],
     ];
 
-    const MAX_HISTORY = 20;
     if (newCanvasData.length > MAX_HISTORY) {
       newCanvasData.shift();
     }
@@ -257,7 +299,6 @@ const Room = ({ checkingRoom, setCheckingRoom }) => {
       ...canvasData.slice(0, currentIndex + 1),
       [...canvasData[currentIndex], data],
     ];
-    const MAX_HISTORY = 20;
 
     if (newCanvasData.length > MAX_HISTORY) {
       newCanvasData.shift();
@@ -275,7 +316,7 @@ const Room = ({ checkingRoom, setCheckingRoom }) => {
       {allowedInRoom && (
         <>
           <h1 className="roomId-title">Room:{roomId}</h1>
-          <RoomPanel activeUsers={activeUsers}/>
+          <RoomPanel activeUsers={activeUsers} />
           <ToolBar addRectangle={addRectangle} addText={addText} />
           <Canvas
             canvasData={canvasData}

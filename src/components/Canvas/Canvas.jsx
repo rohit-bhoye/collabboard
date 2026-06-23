@@ -30,6 +30,8 @@ const Canvas = ({
   const lastLiveTimeRef = useRef(0);
   const latestLiveRef = useRef(null);
 
+  const lastCursorMoveRef = useRef(0);
+
   const isResizingRef = useRef(false);
   const activehandleRef = useRef(null);
   const selectedElementRef = useRef(null);
@@ -53,7 +55,7 @@ const Canvas = ({
 
   //===============*Throttle*================
 
-  const LIVE_INTERVAL = 1000 / 50;
+  const LIVE_INTERVAL = 1000 / 65;
   const sendLive = (updated) => {
     latestLiveRef.current = updated;
     const now = performance.now();
@@ -65,11 +67,15 @@ const Canvas = ({
   };
 
   const sendCursor = (x, y) => {
-    let data = {
-      x: x,
-      y: y,
-    };
-    setLiveCursor(data);
+    const now = performance.now();
+    if (now - lastCursorMoveRef.current >= LIVE_INTERVAL) {
+      let data = {
+        x: x,
+        y: y,
+      };
+      lastCursorMoveRef.current = now;
+      setLiveCursor(data);
+    }
   };
 
   //===============*resize handle*================
@@ -466,14 +472,14 @@ const Canvas = ({
       }
     });
 
-   if(isRoom){
-     Object.entries(liveCursorsData).forEach(([id, cursor]) => {
-      if (id === userId) return; // don't draw my own cursor
-      if (cursor.x == null || cursor.y == null) return;
+    if (isRoom) {
+      Object.entries(liveCursorsData).forEach(([id, cursor]) => {
+        if (id === userId) return; // don't draw my own cursor
+        if (cursor.x == null || cursor.y == null) return;
 
-      drawRemoteCursor(ctx, cursor, id);
-    });
-   }
+        drawRemoteCursor(ctx, cursor, id);
+      });
+    }
   };
 
   useEffect(() => {
