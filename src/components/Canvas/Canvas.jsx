@@ -6,6 +6,8 @@ import { database } from "../../firebase";
 import { ref } from "firebase/database";
 
 const Canvas = ({
+  addRectangle,
+  addText,
   currentIndex,
   setCurrentIndex,
   canvasData,
@@ -18,6 +20,8 @@ const Canvas = ({
   liveCursor,
   setLiveCursor,
   liveCursorsData,
+  activeTool,
+  setActiveTool,
 }) => {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
@@ -584,6 +588,16 @@ const Canvas = ({
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
+    if (activeTool === "rect") {
+      addRectangle(x, y);
+      setActiveTool("select");
+    }
+
+    if (activeTool === "text") {
+      addText(x, y);
+      setActiveTool("select");
+    }
 
     // ctx.beginPath();
     // ctx.moveTo(x, y);

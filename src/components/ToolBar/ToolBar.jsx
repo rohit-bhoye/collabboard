@@ -1,12 +1,19 @@
 import React from "react";
 import "./ToolBar.css";
-const ToolBar = ({ addRectangle, addText }) => {
+const ToolBar = ({ activeTool, setActiveTool }) => {
+  const handleRectangle = () => {
+    setActiveTool("rect");
+  };
+
+  const handleAddText = () => {
+    setActiveTool("text");
+  };
   return (
     <div className="toolbar-container">
-      <button className="rectangle" onClick={addRectangle}>
+      <button className="rectangle" onClick={handleRectangle}>
         rectangle
       </button>
-      <button className="addText" onClick={addText}>
+      <button className="addText" onClick={handleAddText}>
         𝐓
       </button>
     </div>

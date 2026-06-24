@@ -33,6 +33,7 @@ const Room = ({}) => {
   const [allowedInRoom, setAllowedInRoom] = useState(false);
   const [activeUsers, setActiveUsers] = useState(0);
   const [checkingRoom, setCheckingRoom] = useState(true);
+  const [activeTool, setActiveTool] = useState("select");
   const { roomId } = useParams();
 
   const MAX_USERS = 5;
@@ -260,12 +261,12 @@ const Room = ({}) => {
     return () => unsubscribe();
   }, [allowedInRoom, roomId]);
 
-  const addText = () => {
+  const addText = (x, y) => {
     const data = {
       id: crypto.randomUUID(),
       type: "text",
-      x: Math.round(window.innerWidth / 2 - 100),
-      y: Math.round(window.innerHeight / 2 - 60),
+      x: x,
+      y: y,
       text: "Hello",
       width: 40,
       height: 40,
@@ -285,14 +286,14 @@ const Room = ({}) => {
     setCurrentCanvas(newCanvasData[newCanvasData.length - 1]);
   };
 
-  const addRectangle = () => {
+  const addRectangle = (x, y) => {
     const data = {
       id: crypto.randomUUID(),
       type: "rect",
-      x: Math.round(window.innerWidth / 2 - 100),
-      y: Math.round(window.innerHeight / 2 - 60),
-      width: 200,
-      height: 120,
+      x: x,
+      y: y,
+      width: 100,
+      height: 80,
     };
 
     const newCanvasData = [
@@ -317,8 +318,10 @@ const Room = ({}) => {
         <>
           <h1 className="roomId-title">Room:{roomId}</h1>
           <RoomPanel activeUsers={activeUsers} />
-          <ToolBar addRectangle={addRectangle} addText={addText} />
+          <ToolBar activeTool={activeTool} setActiveTool={setActiveTool} />
           <Canvas
+            addRectangle={addRectangle}
+            addText={addText}
             canvasData={canvasData}
             setCanvasData={setCanvasData}
             currentIndex={currentIndex}
@@ -331,6 +334,8 @@ const Room = ({}) => {
             liveCursor={liveCursor}
             setLiveCursor={setLiveCursor}
             liveCursorsData={liveCursorsData}
+            activeTool={activeTool}
+            setActiveTool={setActiveTool}
           />
         </>
       )}

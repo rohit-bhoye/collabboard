@@ -8,15 +8,15 @@ const Home = () => {
   const [canvasData, setCanvasData] = useState([[]]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentCanvas, setCurrentCanvas] = useState(canvasData[currentIndex]);
-
+  const [activeTool, setActiveTool] = useState("select");
   const idRef = useRef(1);
 
-  const addText = () => {
+  const addText = (x,y) => {
     const data = {
       id: idRef.current,
       type: "text",
-      x: Math.round(window.innerWidth / 2 - 100),
-      y: Math.round(window.innerHeight / 2 - 60),
+      x: x,
+      y: y,
       text: "Hello",
       width: 40,
       height: 40,
@@ -33,14 +33,14 @@ const Home = () => {
     idRef.current = idRef.current + 1;
   };
 
-  const addRectangle = () => {
+  const addRectangle = (x, y) => {
     const data = {
       id: idRef.current,
       type: "rect",
-      x: Math.round(window.innerWidth / 2 - 100),
-      y: Math.round(window.innerHeight / 2 - 60),
-      width: 200,
-      height: 120,
+      x: x,
+      y: y,
+      width: 100,
+      height: 80,
     };
 
     const newCanvasData = [
@@ -55,14 +55,18 @@ const Home = () => {
   return (
     <div>
       <RoomPanel />
-      <ToolBar addRectangle={addRectangle} addText={addText} />
+      <ToolBar activeTool={activeTool} setActiveTool={setActiveTool} />
       <Canvas
+        addRectangle={addRectangle}
+        addText={addText}
         canvasData={canvasData}
         setCanvasData={setCanvasData}
         currentIndex={currentIndex}
         setCurrentIndex={setCurrentIndex}
         currentCanvas={currentCanvas}
         setCurrentCanvas={setCurrentCanvas}
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
       />
     </div>
   );
