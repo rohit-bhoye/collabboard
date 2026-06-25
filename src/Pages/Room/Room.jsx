@@ -50,26 +50,6 @@ const Room = ({}) => {
 
   useEffect(() => {
     if (!allowedInRoom) return;
-
-    const roomRef = ref(database, `rooms/${roomId}/createdAt`);
-
-    const roomCreation = async () => {
-      try {
-        const snapShot = await get(roomRef);
-
-        if (!snapShot.exists()) {
-          await set(roomRef, Date.now());
-        }
-      } catch (error) {
-        console.error("createdAt check failed:", error);
-      }
-    };
-
-    roomCreation();
-  }, [allowedInRoom, roomId]);
-
-  useEffect(() => {
-    if (!allowedInRoom) return;
     const userRef = ref(database, `rooms/${roomId}/users/`);
     const unsubscribe = onValue(userRef, (snapShot) => {
       const data = snapShot.val();
@@ -133,6 +113,7 @@ const Room = ({}) => {
 
         onDisconnect(currentUserRef).remove();
       } catch (error) {
+        console.error("join room failed:", error.code, error.message, error);
         toast.error("Could not join room", { duration: 3000 });
         setCheckingRoom(false);
         setAllowedInRoom(false);
@@ -284,6 +265,7 @@ const Room = ({}) => {
     setCanvasData(newCanvasData);
     setCurrentIndex(newCanvasData.length - 1);
     setCurrentCanvas(newCanvasData[newCanvasData.length - 1]);
+    return data.id;
   };
 
   const addRectangle = (x, y) => {
@@ -307,6 +289,7 @@ const Room = ({}) => {
     setCanvasData(newCanvasData);
     setCurrentIndex(newCanvasData.length - 1);
     setCurrentCanvas(newCanvasData[newCanvasData.length - 1]);
+    return data.id;
   };
 
   if (checkingRoom) {

@@ -1,18 +1,33 @@
 import React, { useState } from "react";
 import "./RoomPanel.css";
 import { useNavigate, useParams } from "react-router-dom";
+import { database } from "../../firebase";
+import { ref, set } from "firebase/database";
+import toast from "react-hot-toast";
 const RoomPanel = ({ activeUsers }) => {
   const [joinRoomId, setJoinRoomId] = useState("");
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const handleCreateRoom = () => {
-    const id = Math.random().toString(36).slice(2, 12);
-    navigate(`/room/${id}`);
+
+  const handleCreateRoom = async () => {
+    try {
+      const id = Math.random().toString(36).slice(2, 12);
+      const roomRef = ref(database, `rooms/${id}/createdAt`);
+
+      await set(roomRef, Date.now());
+
+      navigate(`/room/${id}`);
+    } catch (error) {
+      console.error("room creation failed:", error);
+      toast.error("Could not create room", { duration: 3000 });
+    }
   };
 
   const handleJoinRoom = () => {
-    if (!joinRoomId.trim()) return;
-
+    if (!joinRoomId.trim()) {
+      toast.error("Write Room ID", { duration: 3000 });
+      return;
+    }
     navigate(`/room/${joinRoomId}`);
   };
   return (

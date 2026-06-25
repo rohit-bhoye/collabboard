@@ -23,6 +23,7 @@ const Canvas = ({
   activeTool,
   setActiveTool,
 }) => {
+  const [previewShape, setPreviewShape] = useState(null);
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const isDrawingRef = useRef(false);
@@ -476,6 +477,33 @@ const Canvas = ({
       }
     });
 
+    if (previewShape) {
+      if (activeTool === "rect") {
+        canvas.style.cursor = "crosshair";
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = "#dbeafe";
+        fillRect(
+          previewShape.x,
+          previewShape.y,
+          previewShape.width,
+          previewShape.height,
+        );
+        ctx.restore();
+      } else if (activeTool === "text") {
+        canvas.style.cursor = "crosshair";
+        ctx.save();
+        ctx.globalAlpha = 0.35;
+
+        ctx.font = `${previewShape.fontSize}px sans-serif`;
+        ctx.fillStyle = "black";
+        ctx.textBaseline = "top";
+
+        ctx.fillText(previewShape.text, previewShape.x, previewShape.y);
+        ctx.restore();
+      }
+    }
+
     if (isRoom) {
       Object.entries(liveCursorsData).forEach(([id, cursor]) => {
         if (id === userId) return; // don't draw my own cursor
@@ -488,7 +516,7 @@ const Canvas = ({
 
   useEffect(() => {
     draw();
-  }, [currentCanvas, liveCursorsData, userId]);
+  }, [currentCanvas, liveCursorsData, userId, previewShape, activeTool]);
 
   //===============================(DELETE) and (Undo/Redo)===============================\\
   useEffect(() => {
@@ -590,13 +618,28 @@ const Canvas = ({
     const y = e.clientY - rect.top;
 
     if (activeTool === "rect") {
-      addRectangle(x, y);
+      let newRect = addRectangle(x, y);
+      selectedElementIdRef.current = newRect;
+      selectedElementRef.current = null;
+      activehandleRef.current = null;
+      isDraggingRef.current = false;
+      isResizingRef.current = false;
+      setPreviewShape(null);
       setActiveTool("select");
+      canvas.style.cursor = "default";
+      return;
     }
 
     if (activeTool === "text") {
-      addText(x, y);
+      let newText = addText(x, y);
+      selectedElementIdRef.current = newText;
+      selectedElementRef.current = null;
+      activehandleRef.current = null;
+      isDraggingRef.current = false;
+      isResizingRef.current = false;
+      setPreviewShape(null);
       setActiveTool("select");
+      return;
     }
 
     // ctx.beginPath();
@@ -669,6 +712,28 @@ const Canvas = ({
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
+    if (activeTool === "rect") {
+      const previewData = {
+        type: "rect",
+        x: x,
+        y: y,
+        width: 100,
+        height: 80,
+      };
+      setPreviewShape(previewData);
+    } else if (activeTool === "text") {
+      const previewData = {
+        type: "text",
+        x: x,
+        y: y,
+        text: "Add text",
+        width: 40,
+        height: 40,
+        fontSize: 40,
+      };
+      setPreviewShape(previewData);
+    }
 
     if (isRoom) {
       sendCursor(x, y);

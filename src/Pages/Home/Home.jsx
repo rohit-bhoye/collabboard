@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import "./Home.css";
 import Canvas from "../../components/Canvas/Canvas";
 import ToolBar from "../../components/ToolBar/ToolBar";
@@ -9,11 +9,10 @@ const Home = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentCanvas, setCurrentCanvas] = useState(canvasData[currentIndex]);
   const [activeTool, setActiveTool] = useState("select");
-  const idRef = useRef(1);
 
-  const addText = (x,y) => {
+  const addText = (x, y) => {
     const data = {
-      id: idRef.current,
+      id: crypto.randomUUID(),
       type: "text",
       x: x,
       y: y,
@@ -30,12 +29,12 @@ const Home = () => {
     setCanvasData(newCanvasData);
     setCurrentIndex(newCanvasData.length - 1);
     setCurrentCanvas(newCanvasData[newCanvasData.length - 1]);
-    idRef.current = idRef.current + 1;
+    return data.id;
   };
 
   const addRectangle = (x, y) => {
     const data = {
-      id: idRef.current,
+      id: crypto.randomUUID(),
       type: "rect",
       x: x,
       y: y,
@@ -50,7 +49,8 @@ const Home = () => {
     setCanvasData(newCanvasData);
     setCurrentIndex(newCanvasData.length - 1);
     setCurrentCanvas(newCanvasData[newCanvasData.length - 1]);
-    idRef.current = idRef.current + 1;
+
+    return data.id;
   };
   return (
     <div>
