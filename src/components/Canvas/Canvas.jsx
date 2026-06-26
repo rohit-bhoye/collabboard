@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./Canvas.css";
 import { useParams } from "react-router-dom";
-import { remove } from "firebase/database";
+import { remove, set } from "firebase/database";
 import { database } from "../../firebase";
 import { ref } from "firebase/database";
 
@@ -20,8 +20,11 @@ const Canvas = ({
   liveCursor,
   setLiveCursor,
   liveCursorsData,
+  livePreviewData,
   activeTool,
   setActiveTool,
+  sendLivePreview,
+  clearLivePreview,
 }) => {
   const [previewShape, setPreviewShape] = useState(null);
   const canvasRef = useRef(null);
@@ -36,6 +39,7 @@ const Canvas = ({
   const latestLiveRef = useRef(null);
 
   const lastCursorMoveRef = useRef(0);
+  const lastPreviewSentRef = useRef(0);
 
   const isResizingRef = useRef(false);
   const activehandleRef = useRef(null);
@@ -55,6 +59,16 @@ const Canvas = ({
     ctxRef.current.lineCap = "round";
     ctxRef.current.lineJoin = "round";
   }, []);
+
+  useEffect(() => {
+    if (activeTool !== "rect" && activeTool !== "text") {
+      setPreviewShape(null);
+
+      if (isRoom) {
+        clearLivePreview();
+      }
+    }
+  }, [activeTool]);
 
   //===============***================Helper Functions===============***================\\
 
@@ -407,6 +421,26 @@ const Canvas = ({
     }
   };
 
+  const drawPreview = (ctx, data, id) => {
+    if (data.type === "rect") {
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = "#dbeafe";
+      fillRect(data.x, data.y, data.width, data.height);
+      ctx.restore();
+    } else if (data.type === "text") {
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+
+      ctx.font = `${data.fontSize}px sans-serif`;
+      ctx.fillStyle = "black";
+      ctx.textBaseline = "top";
+
+      ctx.fillText(data.text, data.x, data.y);
+      ctx.restore();
+    }
+  };
+
   const drawRemoteCursor = (ctx, cursor, id) => {
     ctx.save();
 
@@ -428,6 +462,33 @@ const Canvas = ({
     ctx.fillText(id.slice(0, 4), x + 14, y + 14);
 
     ctx.restore();
+  };
+
+  const createPreviewShape = (tool, x, y) => {
+    switch (tool) {
+      case "rect":
+        return {
+          type: "rect",
+          x,
+          y,
+          width: 100,
+          height: 80,
+        };
+
+      case "text":
+        return {
+          type: "text",
+          x,
+          y,
+          text: "Add text",
+          width: 40,
+          height: 40,
+          fontSize: 40,
+        };
+
+      default:
+        return null;
+    }
   };
 
   //===============================Draw Shapes===============================\\
@@ -511,12 +572,26 @@ const Canvas = ({
 
         drawRemoteCursor(ctx, cursor, id);
       });
+
+      Object.entries(livePreviewData).forEach(([id, data]) => {
+        if (id === userId) return; // don't draw my own preview
+        if (!data) return;
+
+        drawPreview(ctx, data, id);
+      });
     }
   };
 
   useEffect(() => {
     draw();
-  }, [currentCanvas, liveCursorsData, userId, previewShape, activeTool]);
+  }, [
+    currentCanvas,
+    liveCursorsData,
+    userId,
+    previewShape,
+    activeTool,
+    livePreviewData,
+  ]);
 
   //===============================(DELETE) and (Undo/Redo)===============================\\
   useEffect(() => {
@@ -624,6 +699,9 @@ const Canvas = ({
       activehandleRef.current = null;
       isDraggingRef.current = false;
       isResizingRef.current = false;
+      if (isRoom) {
+        clearLivePreview();
+      }
       setPreviewShape(null);
       setActiveTool("select");
       canvas.style.cursor = "default";
@@ -637,6 +715,9 @@ const Canvas = ({
       activehandleRef.current = null;
       isDraggingRef.current = false;
       isResizingRef.current = false;
+      if (isRoom) {
+        clearLivePreview();
+      }
       setPreviewShape(null);
       setActiveTool("select");
       return;
@@ -713,30 +794,25 @@ const Canvas = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (activeTool === "rect") {
-      const previewData = {
-        type: "rect",
-        x: x,
-        y: y,
-        width: 100,
-        height: 80,
-      };
-      setPreviewShape(previewData);
-    } else if (activeTool === "text") {
-      const previewData = {
-        type: "text",
-        x: x,
-        y: y,
-        text: "Add text",
-        width: 40,
-        height: 40,
-        fontSize: 40,
-      };
-      setPreviewShape(previewData);
-    }
-
     if (isRoom) {
       sendCursor(x, y);
+    }
+
+    const previewData = createPreviewShape(activeTool, x, y);
+
+    if (previewData) {
+      setPreviewShape(previewData);
+
+      if (isRoom) {
+        const now = performance.now();
+
+        if (now - lastPreviewSentRef.current >= LIVE_INTERVAL) {
+          sendLivePreview(previewData);
+          lastPreviewSentRef.current = now;
+        }
+      }
+
+      return;
     }
 
     //========================================resize start logic========================================

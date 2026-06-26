@@ -30,6 +30,7 @@ const Room = ({}) => {
   const [live, setLive] = useState(null);
   const [liveCursor, setLiveCursor] = useState(null);
   const [liveCursorsData, setLiveCursorsData] = useState({});
+  const [livePreviewData, setLivePreviewData] = useState({});
   const [allowedInRoom, setAllowedInRoom] = useState(false);
   const [activeUsers, setActiveUsers] = useState(0);
   const [checkingRoom, setCheckingRoom] = useState(true);
@@ -47,6 +48,34 @@ const Room = ({}) => {
   }
 
   //====================firebase data read/write===============\\
+
+  useEffect(() => {
+    if (!allowedInRoom || !roomId) {
+      setLivePreviewData({});
+      return;
+    }
+    const roomRef = ref(database, `rooms/${roomId}/livePreview/`);
+    const currentUserPreviewRef = ref(
+      database,
+      `rooms/${roomId}/livePreview/${userId}`,
+    );
+    onDisconnect(currentUserPreviewRef).remove();
+    const unsubscribe = onValue(roomRef, (snapShot) => {
+      const data = snapShot.val();
+
+      if (!data) {
+        setLivePreviewData({});
+        return;
+      }
+      setLivePreviewData(data);
+    });
+
+    return () => {
+      unsubscribe();
+      remove(currentUserPreviewRef);
+      setLivePreviewData({});
+    };
+  }, [allowedInRoom, roomId, userId]);
 
   useEffect(() => {
     if (!allowedInRoom) return;
@@ -292,6 +321,26 @@ const Room = ({}) => {
     return data.id;
   };
 
+  const sendLivePreview = async (data) => {
+    if (!roomId || !userId || !data) return;
+
+    try {
+      await set(ref(database, `rooms/${roomId}/livePreview/${userId}`), data);
+    } catch (error) {
+      console.log("something went wrong", error);
+    }
+  };
+
+  const clearLivePreview = async () => {
+    if (!roomId || !userId) return;
+
+    try {
+      await remove(ref(database, `rooms/${roomId}/livePreview/${userId}`));
+    } catch (error) {
+      console.log("something went wrong", error);
+    }
+  };
+
   if (checkingRoom) {
     return <div className="checking-room">Loading...</div>;
   }
@@ -317,8 +366,11 @@ const Room = ({}) => {
             liveCursor={liveCursor}
             setLiveCursor={setLiveCursor}
             liveCursorsData={liveCursorsData}
+            livePreviewData={livePreviewData}
             activeTool={activeTool}
             setActiveTool={setActiveTool}
+            clearLivePreview={clearLivePreview}
+            sendLivePreview={sendLivePreview}
           />
         </>
       )}
