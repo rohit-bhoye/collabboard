@@ -4,6 +4,14 @@ import { useParams } from "react-router-dom";
 import { remove, set } from "firebase/database";
 import { database } from "../../firebase";
 import { ref } from "firebase/database";
+import {
+  drawElement,
+  getCursorForResizeHandle,
+  getElementSize,
+  getResizeHandle,
+  getResizeSnapshot,
+  isPointInsideElement,
+} from "../../utils/canvas/shapeHelpers";
 
 const Canvas = ({
   addRectangle,
@@ -95,113 +103,6 @@ const Canvas = ({
       lastCursorMoveRef.current = now;
       setLiveCursor(data);
     }
-  };
-
-  //===============*resize handle*================
-
-  const getResizeHandle = (element, x, y, tol) => {
-    const ctx = ctxRef.current;
-    let width;
-    let height;
-    if (element.type === "rect") {
-      width = element.width;
-      height = element.height;
-    } else if (element.type === "text") {
-      ctx.font = `${element.fontSize}px sans-serif`;
-      width = ctx.measureText(element.text).width;
-      height = element.fontSize;
-    }
-    const isTopLeft =
-      x >= element.x - tol &&
-      x <= element.x + tol &&
-      y >= element.y - tol &&
-      y <= element.y + tol;
-
-    const isTopRight =
-      x >= element.x + width - tol &&
-      x <= element.x + width + tol &&
-      y >= element.y - tol &&
-      y <= element.y + tol;
-
-    const isBottomLeft =
-      x >= element.x - tol &&
-      x <= element.x + tol &&
-      y >= element.y + height - tol &&
-      y <= element.y + height + tol;
-
-    const isBottomRight =
-      x >= element.x + width - tol &&
-      x <= element.x + width + tol &&
-      y >= element.y + height - tol &&
-      y <= element.y + height + tol;
-
-    if (isTopLeft) return "isTopLeft";
-    if (isTopRight) return "isTopRight";
-    if (isBottomLeft) return "isBottomLeft";
-    if (isBottomRight) return "isBottomRight";
-
-    return null;
-  };
-
-  //===============*inside shape*================
-
-  const getIsInside = (element, x, y) => {
-    const ctx = ctxRef.current;
-    let width;
-    let height;
-    if (element.type === "rect") {
-      width = element.width;
-      height = element.height;
-    } else if (element.type === "text") {
-      ctx.font = `${element.fontSize}px sans-serif`;
-      width = ctx.measureText(element.text).width;
-      height = element.fontSize;
-    }
-    const isInside =
-      x >= element.x &&
-      x <= element.x + width &&
-      y >= element.y &&
-      y <= element.y + height;
-    return isInside;
-  };
-
-  //fillRect  helper function
-  const fillRect = (x, y, width, height) => {
-    const ctx = ctxRef.current;
-    ctx.fillRect(x, y, width, height);
-  };
-  //strokeReact helper function
-  const strokeRect = (x, y, width, height) => {
-    const ctx = ctxRef.current;
-    ctx.strokeRect(x, y, width, height);
-  };
-
-  //hitDetectionBorder function
-  const hitDetectionBorder = (x, y, width, height) => {
-    const ctx = ctxRef.current;
-    ctx.strokeStyle = "#0AC4E0";
-    ctx.lineWidth = 2;
-    strokeRect(x, y, width, height);
-
-    //resize box
-    ctx.fillStyle = "white";
-    fillRect(x - 10 / 2, y - 10 / 2, 10, 10);
-
-    fillRect(x + width - 10 / 2, y - 10 / 2, 10, 10);
-
-    fillRect(x - 10 / 2, y + height - 10 / 2, 10, 10);
-
-    fillRect(x + width - 10 / 2, y + height - 10 / 2, 10, 10);
-
-    ctx.strokeStyle = "#0AC4E0";
-    ctx.lineWidth = 2;
-    strokeRect(x - 10 / 2, y - 10 / 2, 10, 10);
-
-    strokeRect(x + width - 10 / 2, y - 10 / 2, 10, 10);
-
-    strokeRect(x - 10 / 2, y + height - 10 / 2, 10, 10);
-
-    strokeRect(x + width - 10 / 2, y + height - 10 / 2, 10, 10);
   };
 
   //******************************Resize Rectangle******************************\\
@@ -426,7 +327,7 @@ const Canvas = ({
       ctx.save();
       ctx.globalAlpha = 0.55;
       ctx.fillStyle = "#dbeafe";
-      fillRect(data.x, data.y, data.width, data.height);
+      ctx.fillRect(data.x, data.y, data.width, data.height);
       ctx.restore();
     } else if (data.type === "text") {
       ctx.save();
@@ -500,42 +401,7 @@ const Canvas = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     currentCanvas.forEach((element) => {
-      if (element.type === "rect") {
-        ctx.fillStyle = "white";
-        fillRect(element.x, element.y, element.width, element.height);
-
-        if (element.id === selectedElementIdRef.current) {
-          hitDetectionBorder(
-            element.x,
-            element.y,
-            element.width,
-            element.height,
-          );
-        } else {
-          ctx.lineWidth = 1;
-          ctx.strokeStyle = "black";
-          strokeRect(element.x, element.y, element.width, element.height);
-        }
-      } else if (element.type === "text") {
-        ctx.font = `${element.fontSize}px sans-serif`;
-        ctx.fillStyle = "black";
-
-        ctx.textBaseline = "top";
-
-        ctx.fillText(element.text, element.x, element.y);
-        const textWidth = ctx.measureText(element.text).width;
-        const textHeight = element.fontSize;
-        const padding = 4;
-
-        if (element.id === selectedElementIdRef.current) {
-          hitDetectionBorder(
-            element.x - padding,
-            element.y - padding,
-            textWidth + padding * 2,
-            textHeight + padding * 2,
-          );
-        }
-      }
+      drawElement(ctx, element, selectedElementIdRef.current);
     });
 
     if (previewShape) {
@@ -544,7 +410,7 @@ const Canvas = ({
         ctx.save();
         ctx.globalAlpha = 0.55;
         ctx.fillStyle = "#dbeafe";
-        fillRect(
+        ctx.fillRect(
           previewShape.x,
           previewShape.y,
           previewShape.width,
@@ -655,7 +521,7 @@ const Canvas = ({
 
   //===============================ToggleCursor Function===============================\\
 
-  const toggleCursor = (x, y) => {
+  const toggleCursor = (ctx, x, y) => {
     const canvas = canvasRef.current;
 
     if (!selectedElementIdRef.current) {
@@ -668,18 +534,10 @@ const Canvas = ({
       (element) => element.id === selectedElementIdRef.current,
     );
     if (!currentElement) return;
-    const handle = getResizeHandle(currentElement, x, y, 10);
-
-    if (handle === "isTopLeft" || handle === "isBottomRight") {
-      canvas.style.cursor = "nwse-resize";
-      activehandleRef.current = handle;
-    } else if (handle === "isTopRight" || handle === "isBottomLeft") {
-      canvas.style.cursor = "nesw-resize";
-      activehandleRef.current = handle;
-    } else {
-      canvas.style.cursor = "default";
-      activehandleRef.current = null;
-    }
+    const handle = getResizeHandle(ctx, currentElement, x, y, 10);
+    const cursor = getCursorForResizeHandle(handle);
+    canvas.style.cursor = cursor;
+    activehandleRef.current = handle || null;
   };
 
   //===============================Mouse Down===============================\\
@@ -732,8 +590,8 @@ const Canvas = ({
     const tol = 10;
     for (let i = currentCanvas.length - 1; i >= 0; i--) {
       let element = currentCanvas[i];
-      const handle = getResizeHandle(element, x, y, tol);
-      const inside = getIsInside(element, x, y);
+      const handle = getResizeHandle(ctx, element, x, y, tol);
+      const inside = isPointInsideElement(ctx, element, x, y);
 
       //resize and drag selection logic
 
@@ -741,26 +599,10 @@ const Canvas = ({
         activehandleRef.current = handle;
         isResizingRef.current = true;
 
-        let width;
-        let height;
-        if (element.type === "rect") {
-          width = element.width;
-          height = element.height;
-        } else if (element.type === "text") {
-          ctx.font = `${element.fontSize}px sans-serif`;
-          width = ctx.measureText(element.text).width;
-          height = element.fontSize;
-        }
+        const { width, height } = getElementSize(ctx, element);
+
         selectedElementIdRef.current = element.id;
-        selectedElementRef.current = {
-          ...element,
-          right: element.x + width,
-          bottom: element.y + height,
-          left: element.x,
-          top: element.y,
-          width: width,
-          height: height,
-        };
+        selectedElementRef.current = getResizeSnapshot(width, height, element);
         offsetXRef.current = x;
         offsetYRef.current = y;
         selectedElement = true;
@@ -943,7 +785,7 @@ const Canvas = ({
     }
 
     if (!isResizingRef.current) {
-      toggleCursor(x, y);
+      toggleCursor(ctx, x, y);
     }
   };
 
