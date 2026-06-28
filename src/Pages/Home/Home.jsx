@@ -17,9 +17,9 @@ const Home = () => {
       x: x,
       y: y,
       text: "Hello",
-      width: 40,
-      height: 40,
-      fontSize: 40,
+      width: 45,
+      height: 45,
+      fontSize: 45,
     };
 
     const newCanvasData = [
@@ -38,8 +38,8 @@ const Home = () => {
       type: "rect",
       x: x,
       y: y,
-      width: 100,
-      height: 80,
+      width: 120,
+      height: 75,
     };
 
     const newCanvasData = [

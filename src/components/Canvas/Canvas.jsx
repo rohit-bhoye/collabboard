@@ -12,6 +12,7 @@ import {
   getResizeSnapshot,
   isPointInsideElement,
 } from "../../utils/canvas/shapeHelpers";
+import { drawGrid, snapToGrid } from "../../utils/canvas/gridHelper";
 
 const Canvas = ({
   addRectangle,
@@ -61,11 +62,25 @@ const Canvas = ({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    ctxRef.current = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    ctxRef.current.lineCap = "round";
-    ctxRef.current.lineJoin = "round";
+    const ctx = canvas.getContext("2d");
+
+    const dpr = window.devicePixelRatio || 1;
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    ctxRef.current = ctx;
   }, []);
 
   useEffect(() => {
@@ -121,14 +136,33 @@ const Canvas = ({
       let height = oldBottom - y;
       let updatedX = x;
       let updatedY = y;
+
+      if (width >= 0 && width < 15) {
+        width = 15;
+        updatedX = oldRight - width;
+      }
+
+      if (width < 0 && width > -15) {
+        width = -15;
+      }
+
       if (width < 0) {
         width = Math.abs(width);
-        updatedX -= width;
+        updatedX = oldRight;
+      }
+
+      if (height >= 0 && height < 15) {
+        height = 15;
+        updatedY = oldBottom - height;
+      }
+
+      if (height < 0 && height > -15) {
+        height = -15;
       }
 
       if (height < 0) {
         height = Math.abs(height);
-        updatedY -= height;
+        updatedY = oldBottom;
       }
       return {
         ...element,
@@ -142,15 +176,33 @@ const Canvas = ({
       let height = y - oldTop;
       let updatedX = selectedElementRef.current.x;
       let updatedY = selectedElementRef.current.y;
+
+      if (width >= 0 && width < 15) {
+        width = 15;
+        updatedX = oldLeft;
+      }
+      if (width < 0 && width > -15) {
+        width = -15;
+      }
+
       if (width < 0) {
         width = Math.abs(width);
-        updatedX -= width;
+        updatedX = oldLeft - width;
+      }
+
+      if (height >= 0 && height < 15) {
+        height = 15;
+        updatedY = oldTop;
+      }
+      if (height < 0 && height > -15) {
+        height = -15;
       }
 
       if (height < 0) {
         height = Math.abs(height);
-        updatedY -= height;
+        updatedY = oldTop - height;
       }
+
       return {
         ...element,
         x: updatedX,
@@ -163,14 +215,37 @@ const Canvas = ({
       let height = oldBottom - y;
       let updatedX = selectedElementRef.current.x;
       let updatedY = y;
-      if (width < 0) {
-        width = Math.abs(width);
-        updatedX -= width;
+      if (width >= 0 && width < 15) {
+        width = 15;
+        updatedX = oldLeft;
       }
 
+      // Width: crossed left side but too small
+      if (width < 0 && width > -15) {
+        width = -15;
+      }
+
+      // Width: flipped to left side
+      if (width < 0) {
+        width = Math.abs(width);
+        updatedX = oldLeft - width;
+      }
+
+      // Height: normal top side
+      if (height >= 0 && height < 15) {
+        height = 15;
+        updatedY = oldBottom - height;
+      }
+
+      // Height: crossed bottom side but too small
+      if (height < 0 && height > -15) {
+        height = -15;
+      }
+
+      // Height: flipped to bottom side
       if (height < 0) {
         height = Math.abs(height);
-        updatedY -= height;
+        updatedY = oldBottom;
       }
       return {
         ...element,
@@ -184,15 +259,39 @@ const Canvas = ({
       let height = y - oldTop;
       let updatedX = x;
       let updatedY = selectedElementRef.current.y;
-      if (width < 0) {
-        width = Math.abs(width);
-        updatedX -= width;
+      if (width >= 0 && width < 15) {
+        width = 15;
+        updatedX = oldRight - width;
       }
 
+      // Width: crossed right side but too small
+      if (width < 0 && width > -15) {
+        width = -15;
+      }
+
+      // Width: flipped to right side
+      if (width < 0) {
+        width = Math.abs(width);
+        updatedX = oldRight;
+      }
+
+      // Height: normal bottom side
+      if (height >= 0 && height < 15) {
+        height = 15;
+        updatedY = oldTop;
+      }
+
+      // Height: crossed top side but too small
+      if (height < 0 && height > -15) {
+        height = -15;
+      }
+
+      // Height: flipped to top side
       if (height < 0) {
         height = Math.abs(height);
-        updatedY -= height;
+        updatedY = oldTop - height;
       }
+
       return {
         ...element,
         x: updatedX,
@@ -213,8 +312,8 @@ const Canvas = ({
       let width = oldRight - x;
       let height = oldBottom - y;
 
-      width = Math.max(20, width);
-      height = Math.max(20, height);
+      width = Math.max(15, width);
+      height = Math.max(15, height);
 
       const scaleX = width / selectedElementRef.current.width;
 
@@ -224,7 +323,7 @@ const Canvas = ({
 
       let updatedSize = selectedElementRef.current.fontSize * scale;
 
-      updatedSize = Math.max(20, updatedSize);
+      updatedSize = Math.max(15, updatedSize);
       ctx.font = `${updatedSize}px sans-serif`;
 
       const measuredWidth = ctx.measureText(element.text).width;
@@ -244,8 +343,8 @@ const Canvas = ({
       let width = x - oldLeft;
       let height = y - oldTop;
 
-      width = Math.max(20, width);
-      height = Math.max(20, height);
+      width = Math.max(15, width);
+      height = Math.max(15, height);
 
       const scaleX = width / selectedElementRef.current.width;
 
@@ -255,7 +354,7 @@ const Canvas = ({
 
       let updatedSize = selectedElementRef.current.fontSize * scale;
 
-      updatedSize = Math.max(20, updatedSize);
+      updatedSize = Math.max(15, updatedSize);
 
       return {
         ...element,
@@ -266,8 +365,8 @@ const Canvas = ({
     } else if (activehandleRef.current === "isTopRight") {
       let width = x - oldLeft;
       let height = oldBottom - y;
-      width = Math.max(20, width);
-      height = Math.max(20, height);
+      width = Math.max(15, width);
+      height = Math.max(15, height);
 
       const scaleX = width / selectedElementRef.current.width;
 
@@ -277,7 +376,7 @@ const Canvas = ({
 
       let updatedSize = selectedElementRef.current.fontSize * scale;
 
-      updatedSize = Math.max(20, updatedSize);
+      updatedSize = Math.max(15, updatedSize);
 
       let updatedY = oldBottom - updatedSize;
 
@@ -292,8 +391,8 @@ const Canvas = ({
       let width = oldRight - x;
       let height = y - oldTop;
 
-      width = Math.max(20, width);
-      height = Math.max(20, height);
+      width = Math.max(15, width);
+      height = Math.max(15, height);
 
       const scaleX = width / selectedElementRef.current.width;
 
@@ -303,7 +402,7 @@ const Canvas = ({
 
       let updatedSize = selectedElementRef.current.fontSize * scale;
 
-      updatedSize = Math.max(20, updatedSize);
+      updatedSize = Math.max(15, updatedSize);
       ctx.font = `${updatedSize}px sans-serif`;
       const measuredWidth = ctx.measureText(element.text).width;
 
@@ -366,14 +465,16 @@ const Canvas = ({
   };
 
   const createPreviewShape = (tool, x, y) => {
+    x = snapToGrid(x);
+    y = snapToGrid(y);
     switch (tool) {
       case "rect":
         return {
           type: "rect",
           x,
           y,
-          width: 100,
-          height: 80,
+          width: 120,
+          height: 75,
         };
 
       case "text":
@@ -382,9 +483,9 @@ const Canvas = ({
           x,
           y,
           text: "Add text",
-          width: 40,
-          height: 40,
-          fontSize: 40,
+          width: 45,
+          height: 45,
+          fontSize: 45,
         };
 
       default:
@@ -398,7 +499,9 @@ const Canvas = ({
     const ctx = ctxRef.current;
     const canvas = canvasRef.current;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+    drawGrid(ctx, canvas);
 
     currentCanvas.forEach((element) => {
       drawElement(ctx, element, selectedElementIdRef.current);
@@ -551,7 +654,9 @@ const Canvas = ({
     const y = e.clientY - rect.top;
 
     if (activeTool === "rect") {
-      let newRect = addRectangle(x, y);
+      let snappedX = snapToGrid(x);
+      let snappedY = snapToGrid(y);
+      let newRect = addRectangle(snappedX, snappedY);
       selectedElementIdRef.current = newRect;
       selectedElementRef.current = null;
       activehandleRef.current = null;
@@ -567,7 +672,9 @@ const Canvas = ({
     }
 
     if (activeTool === "text") {
-      let newText = addText(x, y);
+      let snappedX = snapToGrid(x);
+      let snappedY = snapToGrid(y);
+      let newText = addText(snappedX, snappedY);
       selectedElementIdRef.current = newText;
       selectedElementRef.current = null;
       activehandleRef.current = null;
@@ -665,6 +772,8 @@ const Canvas = ({
         const oldBottom = selectedElementRef.current.bottom;
         const oldLeft = selectedElementRef.current.left;
         const oldTop = selectedElementRef.current.top;
+        const snappedX = snapToGrid(x);
+        const snappedY = snapToGrid(y);
         let updatedElement = null;
         if (selectedElementRef.current.type === "rect") {
           updatedElement = resizeRectangle(
@@ -673,8 +782,8 @@ const Canvas = ({
             oldBottom,
             oldLeft,
             oldTop,
-            x,
-            y,
+            snappedX,
+            snappedY,
           );
 
           const updated = {
@@ -693,8 +802,8 @@ const Canvas = ({
             oldBottom,
             oldLeft,
             oldTop,
-            x,
-            y,
+            snappedX,
+            snappedY,
           );
 
           const updated = {
@@ -715,6 +824,9 @@ const Canvas = ({
         const oldBottom = selectedElementRef.current.bottom;
         const oldLeft = selectedElementRef.current.left;
         const oldTop = selectedElementRef.current.top;
+        const snappedX = snapToGrid(x);
+        const snappedY = snapToGrid(y);
+
         setCurrentCanvas((prev) =>
           prev.map((element) => {
             if (element.id === selectedElementIdRef.current) {
@@ -725,8 +837,8 @@ const Canvas = ({
                   oldBottom,
                   oldLeft,
                   oldTop,
-                  x,
-                  y,
+                  snappedX,
+                  snappedY,
                 );
               } else if (element.type === "text") {
                 return resizeText(
@@ -735,8 +847,8 @@ const Canvas = ({
                   oldBottom,
                   oldLeft,
                   oldTop,
-                  x,
-                  y,
+                  snappedX,
+                  snappedY,
                 );
               }
             } else {
@@ -758,11 +870,15 @@ const Canvas = ({
 
     if (isRoom) {
       if (isDraggingRef.current && !isResizingRef.current) {
+        const rawX = x - offsetXRef.current;
+        const rawY = y - offsetYRef.current;
+        const snappedX = snapToGrid(rawX);
+        const snappedY = snapToGrid(rawY);
         const updated = {
           shapeId: selectedElementIdRef.current,
           type: "MOVE",
-          x: x - offsetXRef.current,
-          y: y - offsetYRef.current,
+          x: snappedX,
+          y: snappedY,
         };
         sendLive(updated);
       }
@@ -771,10 +887,14 @@ const Canvas = ({
         setCurrentCanvas((prev) =>
           prev.map((element) => {
             if (element.id === selectedElementIdRef.current) {
+              const rawX = x - offsetXRef.current;
+              const rawY = y - offsetYRef.current;
+              const snappedX = snapToGrid(rawX);
+              const snappedY = snapToGrid(rawY);
               return {
                 ...element,
-                x: x - offsetXRef.current,
-                y: y - offsetYRef.current,
+                x: snappedX,
+                y: snappedY,
               };
             } else {
               return element;
