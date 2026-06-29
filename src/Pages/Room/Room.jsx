@@ -271,13 +271,13 @@ const Room = ({}) => {
     return () => unsubscribe();
   }, [allowedInRoom, roomId]);
 
-  const addText = (x, y) => {
+  const addText = (x, y,value) => {
     const data = {
       id: crypto.randomUUID(),
       type: "text",
       x: x,
       y: y,
-      text: "Hello",
+      text: value,
       width: 45,
       height: 45,
       fontSize: 45,

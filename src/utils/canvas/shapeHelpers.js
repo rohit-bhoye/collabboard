@@ -1,6 +1,12 @@
 // ================= Draw helpers =================
 
-export const drawElement = (ctx, element, selectedElementId) => {
+export const drawElement = (ctx, element, selectedElementId, textEditor) => {
+    if (
+        textEditor?.mode === "edit" &&
+        element.id === textEditor.elementId
+    ) {
+        return;
+    }
     drawShape(ctx, element);
     if (element.id !== selectedElementId) return;
 
@@ -23,17 +29,23 @@ const drawShape = (ctx, element) => {
     if (element.type === "rect") {
         ctx.fillStyle = "white";
         ctx.fillRect(element.x, element.y, element.width, element.height);
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 2;
         ctx.strokeStyle = "black";
         ctx.strokeRect(element.x, element.y, element.width, element.height);
 
     } else if (element.type === "text") {
+
         ctx.font = `${element.fontSize}px sans-serif`;
         ctx.fillStyle = "black";
 
         ctx.textBaseline = "top";
 
-        ctx.fillText(element.text, element.x, element.y);
+        const lines = element.text.split("\n");
+        const lineHeight = element.fontSize + 5;
+
+        lines.forEach((line, index) => {
+            ctx.fillText(line, element.x, element.y + index * lineHeight);
+        });
     }
     ctx.restore();
 }
@@ -84,9 +96,10 @@ const getElementBounds = (ctx, element) => {
         ctx.font = `${element.fontSize}px sans-serif`;
 
         const padding = 4;
-        const textWidth = ctx.measureText(element.text).width;
-        const textHeight = element.fontSize;
-
+        const lines = element.text.split("\n");
+        const lineHeight = element.fontSize + 5;
+        const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+        const textHeight = lines.length * lineHeight;
         return {
             x: element.x - padding,
             y: element.y - padding,

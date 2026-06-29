@@ -1,4 +1,15 @@
 canvas {
   display: block;
-  
 }
+
+/* .textEditor {
+  font-size: "45px";
+  outline: "blue";
+  z-index: 9999;
+  background: "transparent";
+  border: "2px solid #0AC4E0";
+  outline: "none";
+  resize: none;
+  
+  
+} */

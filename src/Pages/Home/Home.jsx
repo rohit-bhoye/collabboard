@@ -10,13 +10,13 @@ const Home = () => {
   const [currentCanvas, setCurrentCanvas] = useState(canvasData[currentIndex]);
   const [activeTool, setActiveTool] = useState("select");
 
-  const addText = (x, y) => {
+  const addText = (x, y,value) => {
     const data = {
       id: crypto.randomUUID(),
       type: "text",
       x: x,
       y: y,
-      text: "Hello",
+      text:value,
       width: 45,
       height: 45,
       fontSize: 45,

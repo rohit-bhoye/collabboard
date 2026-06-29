@@ -36,6 +36,7 @@ const Canvas = ({
   clearLivePreview,
 }) => {
   const [previewShape, setPreviewShape] = useState(null);
+  const [textEditor, setTextEditor] = useState(null);
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const isDrawingRef = useRef(false);
@@ -504,7 +505,7 @@ const Canvas = ({
     drawGrid(ctx, canvas);
 
     currentCanvas.forEach((element) => {
-      drawElement(ctx, element, selectedElementIdRef.current);
+      drawElement(ctx, element, selectedElementIdRef.current, textEditor);
     });
 
     if (previewShape) {
@@ -560,6 +561,7 @@ const Canvas = ({
     previewShape,
     activeTool,
     livePreviewData,
+    textEditor,
   ]);
 
   //===============================(DELETE) and (Undo/Redo)===============================\\
@@ -674,8 +676,15 @@ const Canvas = ({
     if (activeTool === "text") {
       let snappedX = snapToGrid(x);
       let snappedY = snapToGrid(y);
-      let newText = addText(snappedX, snappedY);
-      selectedElementIdRef.current = newText;
+
+      setTextEditor({
+        mode: "create",
+        x: snappedX,
+        y: snappedY,
+        value: "",
+      });
+      // let newText = addText(snappedX, snappedY);
+
       selectedElementRef.current = null;
       activehandleRef.current = null;
       isDraggingRef.current = false;
@@ -716,6 +725,7 @@ const Canvas = ({
         break;
       } else if (inside) {
         selectedElementIdRef.current = element.id;
+        selectedElementRef.current = element;
         isDraggingRef.current = true;
         selectedElement = true;
         offsetXRef.current = x - element.x;
@@ -943,14 +953,110 @@ const Canvas = ({
     ctx.closePath();
   };
 
+  const handleTextEditor = () => {
+    if (!textEditor) return;
+    const value = textEditor.value.trim();
+    if (textEditor.mode === "create") {
+      if (value) {
+        let newText = addText(textEditor.x, textEditor.y, value);
+        selectedElementIdRef.current = newText;
+      }
+    }
+    if (textEditor.mode === "edit") {
+      if (value) {
+        setCurrentCanvas((prev) => {
+          return prev.map((element) => {
+            if (element.id === textEditor.elementId) {
+              const updatedElement = {
+                ...element,
+                text: value,
+              };
+
+              selectedElementRef.current = updatedElement;
+              return updatedElement;
+            }
+
+            return element;
+          });
+        });
+      } else {
+        setCurrentCanvas((prev) =>
+          prev.filter((element) => element.id !== textEditor.elementId),
+        );
+
+        selectedElementIdRef.current = null;
+        selectedElementRef.current = null;
+      }
+    }
+
+    setTextEditor(null);
+  };
+
+  const handleDoubleClick = (e) => {
+    const clickedElement = selectedElementRef.current;
+
+    if (!clickedElement || clickedElement.type !== "text") return;
+
+    setTextEditor({
+      mode: "edit",
+      elementId: clickedElement.id,
+      x: clickedElement.x,
+      y: clickedElement.y,
+      value: clickedElement.text,
+    });
+  };
+
+  const lines = textEditor?.value.split("\n") || [""];
+  const longestLine = Math.max(...lines.map((line) => line.length));
+  const lineCount = lines.length;
   return (
-    <canvas
-      ref={canvasRef}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    ></canvas>
+    <div>
+      {textEditor && (
+        <textarea
+          className="textEditor"
+          value={textEditor.value}
+          rows={1}
+          onChange={(e) => {
+            setTextEditor((prev) => ({
+              ...prev,
+              value: e.target.value,
+            }));
+          }}
+          style={{
+            position: "absolute",
+            left: textEditor.x,
+            top: textEditor.y,
+
+            fontSize: "45px",
+            lineHeight: "50px",
+            height: "55px",
+            height: `${Math.max(55, lineCount * 50 + 5)}px`,
+            width: `${Math.max(145, longestLine * 25 + 12)}px`,
+
+            resize: "none",
+            overflow: "hidden",
+
+            padding: "0px 4px",
+            boxSizing: "border-box",
+
+            background: "transparent",
+            border: "3px solid #0AC4E0",
+            outline: "none",
+            zIndex: 9999,
+          }}
+          onBlur={handleTextEditor}
+        />
+      )}
+
+      <canvas
+        ref={canvasRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onDoubleClick={handleDoubleClick}
+      ></canvas>
+    </div>
   );
 };
 
