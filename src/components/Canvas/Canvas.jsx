@@ -307,119 +307,80 @@ const Canvas = ({
 
   //******************************Resize Text******************************\\
 
-  const resizeText = (element, oldRight, oldBottom, oldLeft, oldTop, x, y) => {
-    const ctx = ctxRef.current;
+  const measureTextBox = (ctx, text, fontSize) => {
+    ctx.font = `${fontSize}px sans-serif`;
+    const lines = text.split("\n");
+    const lineHeight = fontSize + 5;
+    const width = Math.max(...lines.map((line) => ctx.measureText(line).width));
+    const height = lines.length * lineHeight;
+    return { width, height };
+  };
+
+  const resizeText = (
+    ctx,
+    element,
+    oldRight,
+    oldBottom,
+    oldLeft,
+    oldTop,
+    x,
+    y,
+  ) => {
+    const padding = 4;
+    const snap = selectedElementRef.current;
+
+    const computeScale = (boxW, boxH) => {
+      boxW = Math.max(15, boxW);
+      boxH = Math.max(15, boxH);
+      const scaleX = boxW / snap.width;
+      const scaleY = boxH / snap.height;
+      return Math.max(15, snap.fontSize * ((scaleX + scaleY) / 2));
+    };
+
     if (activehandleRef.current === "isTopLeft") {
-      let width = oldRight - x;
-      let height = oldBottom - y;
-
-      width = Math.max(15, width);
-      height = Math.max(15, height);
-
-      const scaleX = width / selectedElementRef.current.width;
-
-      const scaleY = height / selectedElementRef.current.height;
-
-      const scale = Math.max(scaleX, scaleY);
-
-      let updatedSize = selectedElementRef.current.fontSize * scale;
-
-      updatedSize = Math.max(15, updatedSize);
-      ctx.font = `${updatedSize}px sans-serif`;
-
-      const measuredWidth = ctx.measureText(element.text).width;
-      let updatedX = oldRight - measuredWidth;
-      let updatedY = oldBottom - updatedSize;
-
+      const fontSize = computeScale(oldRight - x, oldBottom - y);
+      const { width, height } = measureTextBox(ctx, element.text, fontSize);
       return {
         ...element,
-
-        x: updatedX,
-        y: updatedY,
-        width: width,
-        height: height,
-        fontSize: updatedSize,
+        x: oldRight - width - padding,
+        y: oldBottom - height - padding,
+        width,
+        height,
+        fontSize,
       };
-    } else if (activehandleRef.current === "isBottomRight") {
-      let width = x - oldLeft;
-      let height = y - oldTop;
-
-      width = Math.max(15, width);
-      height = Math.max(15, height);
-
-      const scaleX = width / selectedElementRef.current.width;
-
-      const scaleY = height / selectedElementRef.current.height;
-
-      const scale = Math.max(scaleX, scaleY);
-
-      let updatedSize = selectedElementRef.current.fontSize * scale;
-
-      updatedSize = Math.max(15, updatedSize);
-
-      return {
-        ...element,
-        width: width,
-        height: height,
-        fontSize: updatedSize,
-      };
-    } else if (activehandleRef.current === "isTopRight") {
-      let width = x - oldLeft;
-      let height = oldBottom - y;
-      width = Math.max(15, width);
-      height = Math.max(15, height);
-
-      const scaleX = width / selectedElementRef.current.width;
-
-      const scaleY = height / selectedElementRef.current.height;
-
-      const scale = Math.max(scaleX, scaleY);
-
-      let updatedSize = selectedElementRef.current.fontSize * scale;
-
-      updatedSize = Math.max(15, updatedSize);
-
-      let updatedY = oldBottom - updatedSize;
-
-      return {
-        ...element,
-        y: updatedY,
-        width: width,
-        height: height,
-        fontSize: updatedSize,
-      };
-    } else if (activehandleRef.current === "isBottomLeft") {
-      let width = oldRight - x;
-      let height = y - oldTop;
-
-      width = Math.max(15, width);
-      height = Math.max(15, height);
-
-      const scaleX = width / selectedElementRef.current.width;
-
-      const scaleY = height / selectedElementRef.current.height;
-
-      const scale = Math.max(scaleX, scaleY);
-
-      let updatedSize = selectedElementRef.current.fontSize * scale;
-
-      updatedSize = Math.max(15, updatedSize);
-      ctx.font = `${updatedSize}px sans-serif`;
-      const measuredWidth = ctx.measureText(element.text).width;
-
-      let updatedX = oldRight - measuredWidth;
-
-      return {
-        ...element,
-
-        x: updatedX,
-        width: width,
-        height: height,
-        fontSize: updatedSize,
-      };
-    } else {
-      return element;
     }
+
+    if (activehandleRef.current === "isBottomRight") {
+      const fontSize = computeScale(x - oldLeft, y - oldTop);
+      const { width, height } = measureTextBox(ctx, element.text, fontSize);
+      return { ...element, width, height, fontSize }; // x,y (top-left) unchanged
+    }
+
+    if (activehandleRef.current === "isTopRight") {
+      const fontSize = computeScale(x - oldLeft, oldBottom - y);
+      const { width, height } = measureTextBox(ctx, element.text, fontSize);
+      return {
+        ...element,
+        y: oldBottom - height - padding,
+        width,
+        height,
+        fontSize,
+      };
+    }
+
+    if (activehandleRef.current === "isBottomLeft") {
+      const fontSize = computeScale(oldRight - x, y - oldTop);
+      const { width, height } = measureTextBox(ctx, element.text, fontSize);
+      return {
+        ...element,
+        x: oldRight - width - padding,
+        width,
+        height,
+        fontSize,
+      };
+    }
+
+    return element;
   };
 
   const drawPreview = (ctx, data, id) => {
@@ -648,6 +609,7 @@ const Canvas = ({
   //===============================Mouse Down===============================\\
 
   const handleMouseDown = (e) => {
+    
     // isDrawingRef.current = true;
     const ctx = ctxRef.current;
     const canvas = canvasRef.current;
@@ -682,6 +644,7 @@ const Canvas = ({
         x: snappedX,
         y: snappedY,
         value: "",
+        fontSize: 45,
       });
       // let newText = addText(snappedX, snappedY);
 
@@ -718,7 +681,12 @@ const Canvas = ({
         const { width, height } = getElementSize(ctx, element);
 
         selectedElementIdRef.current = element.id;
-        selectedElementRef.current = getResizeSnapshot(width, height, element);
+        selectedElementRef.current = getResizeSnapshot(
+          ctx,
+          width,
+          height,
+          element,
+        );
         offsetXRef.current = x;
         offsetYRef.current = y;
         selectedElement = true;
@@ -807,6 +775,7 @@ const Canvas = ({
           sendLive(updated);
         } else if (selectedElementRef.current.type === "text") {
           updatedElement = resizeText(
+            ctx,
             selectedElementRef.current,
             oldRight,
             oldBottom,
@@ -852,6 +821,7 @@ const Canvas = ({
                 );
               } else if (element.type === "text") {
                 return resizeText(
+                  ctx,
                   element,
                   oldRight,
                   oldBottom,
@@ -953,12 +923,32 @@ const Canvas = ({
     ctx.closePath();
   };
 
+  const getTextBoxSize = (ctx, text, fontSize) => {
+    const lines = text.split("\n");
+    const lineHeight = fontSize + 5;
+
+    ctx.font = `${fontSize}px sans-serif`;
+
+    const width = Math.max(
+      ...lines.map((line) => ctx.measureText(line || " ").width),
+    );
+
+    const height = lines.length * lineHeight;
+
+    return {
+      width,
+      height,
+    };
+  };
+
   const handleTextEditor = () => {
     if (!textEditor) return;
     const value = textEditor.value.trim();
+    const canvas = canvasRef.current;
+    const ctx = ctxRef.current;
     if (textEditor.mode === "create") {
       if (value) {
-        let newText = addText(textEditor.x, textEditor.y, value);
+        let newText = addText(canvas, ctx, textEditor.x, textEditor.y, value);
         selectedElementIdRef.current = newText;
       }
     }
@@ -967,9 +957,12 @@ const Canvas = ({
         setCurrentCanvas((prev) => {
           return prev.map((element) => {
             if (element.id === textEditor.elementId) {
+              const size = getTextBoxSize(ctx, value, element.fontSize);
               const updatedElement = {
                 ...element,
                 text: value,
+                width: size.width,
+                height: size.height,
               };
 
               selectedElementRef.current = updatedElement;
@@ -1003,12 +996,43 @@ const Canvas = ({
       x: clickedElement.x,
       y: clickedElement.y,
       value: clickedElement.text,
+      fontSize: clickedElement.fontSize,
     });
   };
 
-  const lines = textEditor?.value.split("\n") || [""];
-  const longestLine = Math.max(...lines.map((line) => line.length));
-  const lineCount = lines.length;
+  // const textEditorRef = useRef(null);
+
+  // useEffect(() => {
+  //   if (textEditor && textEditorRef.current) {
+  //     const el = textEditorRef.current;
+  //     el.focus();
+  //     el.setSelectionRange(el.value.length, el.value.length);
+  //   }
+  // }, [textEditor?.mode, textEditor?.elementId]); // refocus when opening, not on every keystroke
+
+  const fontSize = textEditor?.fontSize ?? 45;
+const lineHeight = fontSize + 5;
+const padding = 4;
+
+const MIN_WIDTH = 100;   // floor so an empty editor is still visible/clickable
+const MIN_HEIGHT = lineHeight;
+
+let editorWidth = MIN_WIDTH;
+let editorHeight = MIN_HEIGHT + padding * 2;
+
+if (textEditor && ctxRef.current) {
+  const ctx = ctxRef.current;
+  ctx.font = `${fontSize}px sans-serif`;
+  const lines = (textEditor.value || "").split("\n");
+  const textWidth = Math.max(
+    ...lines.map((line) => ctx.measureText(line).width) // no " " fallback needed now, floor handles it
+  );
+  const textHeight = lines.length * lineHeight;
+
+  editorWidth = Math.max(MIN_WIDTH, textWidth) + padding * 2;
+  editorHeight = Math.max(MIN_HEIGHT, textHeight) + padding * 2;
+}
+
   return (
     <div>
       {textEditor && (
@@ -1024,19 +1048,18 @@ const Canvas = ({
           }}
           style={{
             position: "absolute",
-            left: textEditor.x,
-            top: textEditor.y,
+            left: textEditor.x - padding,
+            top: textEditor.y - padding,
 
-            fontSize: "45px",
-            lineHeight: "50px",
-            height: "55px",
-            height: `${Math.max(55, lineCount * 50 + 5)}px`,
-            width: `${Math.max(145, longestLine * 25 + 12)}px`,
+            fontSize: `${fontSize}px`,
+            lineHeight: `${lineHeight}px`,
+            height: `${editorHeight*1.2}px`,
+            width: `${editorWidth*1.2}px`,
 
             resize: "none",
             overflow: "hidden",
 
-            padding: "0px 4px",
+            padding: `0px ${padding}px`,
             boxSizing: "border-box",
 
             background: "transparent",

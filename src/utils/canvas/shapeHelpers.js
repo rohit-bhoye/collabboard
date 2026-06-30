@@ -120,11 +120,10 @@ export const getElementSize = (ctx, element) => {
     }
 
     if (element.type === "text") {
-        ctx.font = `${element.fontSize}px sans-serif`;
-
+         const bounds = getElementBounds(ctx, element);
         return {
-            width: ctx.measureText(element.text).width,
-            height: element.fontSize,
+            width: bounds.width,
+            height: bounds.height,
         };
     }
 
@@ -187,16 +186,17 @@ export const getResizeHandle = (ctx, element, mouseX, mouseY, tol = 10) => {
 
 // ================= Resize helpers =================
 
-export const getResizeSnapshot = (width, height, element) => {
+export const getResizeSnapshot = (ctx,width, height, element) => {
+    const bounds = getElementBounds(ctx, element);
     return {
         ...element,
-        right: element.x + width,
-        bottom: element.y + height,
-        left: element.x,
-        top: element.y,
-        width: width,
-        height: height,
-    }
+        right: bounds.x + bounds.width,
+        bottom: bounds.y + bounds.height,
+        left: bounds.x,
+        top: bounds.y,
+        width,
+        height,
+    };
 }
 
 // ================= Cursor helpers =================

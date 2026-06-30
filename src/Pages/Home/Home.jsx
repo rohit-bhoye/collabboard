@@ -10,16 +10,36 @@ const Home = () => {
   const [currentCanvas, setCurrentCanvas] = useState(canvasData[currentIndex]);
   const [activeTool, setActiveTool] = useState("select");
 
-  const addText = (x, y,value) => {
+  const getTextBoxSize = (ctx, text, fontSize) => {
+    const lines = text.split("\n");
+    const lineHeight = fontSize + 5;
+
+    ctx.font = `${fontSize}px sans-serif`;
+
+    const width = Math.max(
+      ...lines.map((line) => ctx.measureText(line || " ").width),
+    );
+
+    const height = lines.length * lineHeight;
+
+    return {
+      width,
+      height,
+    };
+  };
+
+  const addText = (canvas, ctx, x, y, value) => {
+    const fontSize = 45;
+    const size = getTextBoxSize(ctx, value, fontSize);
     const data = {
       id: crypto.randomUUID(),
       type: "text",
       x: x,
       y: y,
-      text:value,
-      width: 45,
-      height: 45,
-      fontSize: 45,
+      text: value,
+      width: size.width,
+      height: size.height,
+      fontSize: fontSize,
     };
 
     const newCanvasData = [
